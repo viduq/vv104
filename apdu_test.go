@@ -20,9 +20,12 @@ func TestVariousFrames(t *testing.T) {
 	m_me_td_1.Asdu.TypeId = M_ME_TD_1
 	m_me_td_1.Asdu.CauseTx = Spont
 	m_me_td_1.Asdu.Casdu = 1
-	m_me_td_1.Asdu.InfoObj.Ioa = 1235
-	m_me_td_1.Asdu.InfoObj.Value = IntVal(32767)
-	m_me_td_1.Asdu.InfoObj.TimeTag = time.Date(2023, 11, 1, 19, 44, 57, 23000000, time.Local)
+
+	infoObj := NewInfoObj()
+	infoObj.Ioa = 1235
+	infoObj.Value = IntVal(32767)
+	infoObj.TimeTag = time.Date(2023, 11, 1, 19, 44, 57, 23000000, time.Local)
+	m_me_td_1.Asdu.AddInfoObject(infoObj)
 	m_me_td_1.Apci.length = 23
 
 	gi_act := NewApdu()
@@ -31,10 +34,12 @@ func TestVariousFrames(t *testing.T) {
 	gi_act.Apci.Ssn = 0
 	gi_act.Asdu.TypeId = C_IC_NA_1
 	gi_act.Asdu.CauseTx = Act
-	gi_act.Asdu.InfoObj.Ioa = 0
-	gi_act.Asdu.InfoObj.CommandInfo.Qoi = statioInterrogation
+	infoObj = NewInfoObj()
+	infoObj.Ioa = 0
+	infoObj.CommandInfo.Qoi = statioInterrogation
+	infoObj.Value = IntVal(0)
+	gi_act.Asdu.AddInfoObject(infoObj)
 	gi_act.Apci.length = 14
-	gi_act.Asdu.InfoObj.Value = IntVal(0)
 
 	sc_act := NewApdu()
 	sc_act.Apci.FrameFormat = IFormatFrame
@@ -42,8 +47,10 @@ func TestVariousFrames(t *testing.T) {
 	sc_act.Apci.Rsn = 12
 	sc_act.Asdu.TypeId = C_SC_NA_1
 	sc_act.Asdu.CauseTx = Act
-	sc_act.Asdu.InfoObj.Ioa = 4500
-	sc_act.Asdu.InfoObj.Value = IntVal(1)
+	infoObj = NewInfoObj()
+	infoObj.Ioa = 4500
+	infoObj.Value = IntVal(1)
+	sc_act.Asdu.AddInfoObject(infoObj)
 	sc_act.Apci.length = 14
 
 	startDtAct := NewApdu()

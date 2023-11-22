@@ -22,9 +22,12 @@ func main() {
 	m_me_td_1.Asdu.TypeId = vv104.M_ME_TD_1
 	m_me_td_1.Asdu.CauseTx = vv104.Spont
 	m_me_td_1.Asdu.Casdu = 1
-	m_me_td_1.Asdu.InfoObj.Ioa = 1235
-	m_me_td_1.Asdu.InfoObj.Value = vv104.IntVal(32767)
-	m_me_td_1.Asdu.InfoObj.TimeTag = time.Date(2023, 11, 1, 19, 44, 57, 23000000, time.Local)
+
+	infoObj := vv104.InfoObj{}
+	infoObj.Ioa = 1235
+	infoObj.Value = vv104.IntVal(32767)
+	infoObj.TimeTag = time.Date(2023, 11, 1, 19, 44, 57, 23000000, time.Local)
+	m_me_td_1.Asdu.AddInfoObject(infoObj)
 
 	apduBytes := m_me_td_1.Serialize(state)
 	fmt.Printf("have: %x\n", apduBytes)
@@ -41,6 +44,22 @@ func main() {
 	}
 
 	fmt.Println(sframe)
+
+	// m_dp_na_1_16x := vv104.NewApdu()
+	// m_dp_na_1_16x.Apci.Rsn = 1
+	// m_dp_na_1_16x.Apci.Ssn = 10
+	// m_dp_na_1_16x.Asdu.TypeId = vv104.M_DP_NA_1
+	// m_dp_na_1_16x.Asdu.CauseTx = vv104.Inrogen
+	// m_dp_na_1_16x.Asdu.Casdu = 1
+	// m_dp_na_1_16x.Asdu.InfoObj.Ioa = 35
+	// m_dp_na_1_16x.Asdu.InfoObj.Value = vv104.IntVal(0)
+
+	// sixteen_dps := `\x68\x4a\x02\x00\x02\x00\x03\x10\x14\x00\x01\x00\x23\x00
+	// \x00\x00\x70\x11\x01\x00\x71\x11\x01\x00\x75\x11\x01\x00\x72\x11
+	// \x01\x00\x74\x11\x01\x00\x7b\x00\x00\x00\x7c\x00\x00\x00\x00\x24
+	// \xf4\x00\x7e\x00\x00\x00\x7f\x00\x00\x00\x40\x42\x0f\x00\x73\x11
+	// \x01\x00\x1e\x00\x00\x00\x80\x00\x00\x00\x7d\x00\x00\x00
+	// `
 
 }
 

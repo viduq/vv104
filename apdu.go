@@ -3,12 +3,27 @@ package vv104
 import (
 	"bytes"
 	"errors"
-	"time"
 )
 
 type Apdu struct {
 	Apci Apci
 	Asdu Asdu
+}
+
+// CheckApdu checks all Apdu Fields if they comply to IEC 104 standard
+// todo: extend
+func (apdu Apdu) CheckApdu() (bool, error) {
+	if apdu.Apci.FrameFormat == IFormatFrame {
+		if apdu.Asdu.Num < 1 {
+			return false, errors.New("Num < 1 for IFormat")
+		}
+		if apdu.Asdu.Casdu == 0 {
+			return false, errors.New("Casdu = 0 is not permitted")
+		}
+
+		// ...
+	}
+	return true, nil
 }
 
 func (apdu Apdu) Serialize(state State) []byte {
@@ -52,18 +67,7 @@ func NewApdu() Apdu {
 			Test:     false,
 			OrigAddr: 0,
 			Casdu:    1,
-			InfoObj: InfoObj{
-				Ioa:   0,
-				Value: IntVal(0),
-				Quality: Quality{
-					Bl: false,
-					Sb: false,
-					Nt: false,
-					Iv: false,
-					Ov: false,
-				},
-				TimeTag: time.Date(0, 0, 0, 0, 0, 0, 0, time.Local),
-			},
+			InfoObj:  []InfoObj{},
 		},
 	}
 	return apdu
