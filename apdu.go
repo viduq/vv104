@@ -26,7 +26,7 @@ func (apdu Apdu) CheckApdu() (bool, error) {
 	return true, nil
 }
 
-func (apdu Apdu) Serialize(state State) []byte {
+func (apdu *Apdu) Serialize(state State) []byte {
 	asduBuf := new(bytes.Buffer)
 	apciBuf := new(bytes.Buffer)
 
@@ -52,7 +52,7 @@ func (apdu Apdu) Serialize(state State) []byte {
 func NewApdu() Apdu {
 	apdu := Apdu{
 		Apci: Apci{
-			length:      0,
+			length:      6,
 			FrameFormat: 0,
 			Rsn:         0,
 			Ssn:         0,

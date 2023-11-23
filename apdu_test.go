@@ -84,6 +84,79 @@ func TestVariousFrames(t *testing.T) {
 	sframe_32767 := sframe_0
 	sframe_32767.Apci.Rsn = 32767
 
+	// 16 DPs in one frame
+	m_dp_na_1_16x := NewApdu()
+	m_dp_na_1_16x.Apci.Rsn = 1
+	m_dp_na_1_16x.Apci.Ssn = 1
+	m_dp_na_1_16x.Asdu.TypeId = M_DP_NA_1
+	m_dp_na_1_16x.Asdu.CauseTx = Inrogen
+	m_dp_na_1_16x.Asdu.Casdu = 1
+	infoObj = InfoObj{}
+	infoObj.Ioa = 35
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 70000
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 70001
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 70005
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 70002
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 70004
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 123
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 124
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 16000000
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 126
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 127
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 1000000
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 70003
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 30
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 128
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	infoObj = InfoObj{}
+	infoObj.Ioa = 125
+	infoObj.Value = IntVal(0)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
+	m_dp_na_1_16x.Apci.length = 74
+
 	// test table adjusted from here: https://blog.jetbrains.com/go/2022/11/22/comprehensive-guide-to-testing-in-go/
 	var tests = []struct {
 		name      string
@@ -102,6 +175,7 @@ func TestVariousFrames(t *testing.T) {
 		{"sframe 0", sframe_0, "\x68\x04\x01\x00\x00\x00"},
 		{"sframe 3", sframe_3, "\x68\x04\x01\x00\x06\x00"},
 		{"sframe 32767", sframe_32767, "\x68\x04\x01\x00\xfe\xff"},
+		{"16x DP inrogen", m_dp_na_1_16x, "\x68\x4a\x02\x00\x02\x00\x03\x10\x14\x00\x01\x00\x23\x00\x00\x00\x70\x11\x01\x00\x71\x11\x01\x00\x75\x11\x01\x00\x72\x11\x01\x00\x74\x11\x01\x00\x7b\x00\x00\x00\x7c\x00\x00\x00\x00\x24\xf4\x00\x7e\x00\x00\x00\x7f\x00\x00\x00\x40\x42\x0f\x00\x73\x11\x01\x00\x1e\x00\x00\x00\x80\x00\x00\x00\x7d\x00\x00\x00"},
 	}
 	// execution loop: Serialize Apdus
 	for _, tt := range tests {

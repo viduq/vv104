@@ -40,6 +40,8 @@ func NewAsdu() *Asdu {
 func (asdu *Asdu) AddInfoObject(infoObj InfoObj) error {
 	asdu.InfoObj = append(asdu.InfoObj, infoObj)
 
+	asdu.Num = Num(len(asdu.InfoObj))
+
 	return nil
 }
 
@@ -526,8 +528,6 @@ func (infoObj *InfoObj) ParseSiqDiq(typeId TypeId, buf *bytes.Buffer) {
 	case M_DP_NA_1, M_DP_TB_1:
 		infoObj.Value = IntVal(b & 0x03)
 	}
-	fmt.Println("parsesiqdiq:", infoObj.Value)
-
 }
 
 func (infoObj *InfoObj) ParseMvValue(typeId TypeId, buf *bytes.Buffer) {
