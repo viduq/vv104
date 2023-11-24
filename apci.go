@@ -10,7 +10,7 @@ const (
 	STARTBYTE byte = 0x68
 )
 
-type SeqNumber uint16
+type SeqNumber int
 
 type Apci struct {
 	length      uint8
