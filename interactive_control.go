@@ -5,10 +5,10 @@ import (
 	"os"
 )
 
-func (state *State) readCommandsFromStdIn() {
+func readCommandsFromStdIn(fromStdInchan chan string) {
 	sc := bufio.NewScanner(os.Stdin)
 
 	for sc.Scan() {
-		state.chans.commandsFromStdin <- sc.Text()
+		fromStdInchan <- sc.Text()
 	}
 }

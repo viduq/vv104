@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 )
 
 type State struct {
@@ -24,7 +25,6 @@ type AllChans struct {
 	commandsFromStdin chan string
 	received          chan Apdu
 	toSend            chan Apdu
-	quit              chan bool
 }
 
 const (
@@ -63,16 +63,34 @@ func NewState() State {
 func (state *State) Start() {
 	state.Config.ParseFlags()
 	state.chans.commandsFromStdin = make(chan string, 30)
-	state.chans.received = make(chan Apdu, state.Config.W)
-	state.chans.toSend = make(chan Apdu, state.Config.K)
-	state.ctx, state.cancel = context.WithCancel(context.Background())
+	go readCommandsFromStdIn(state.chans.commandsFromStdin) // never exits
 
-	go state.readCommandsFromStdIn()
-	go state.startConnection()
+	for {
+		state.chans.received = make(chan Apdu, state.Config.W)
+		state.chans.toSend = make(chan Apdu, state.Config.K)
+		state.ctx, state.cancel = context.WithCancel(context.Background())
+		go state.startConnection()
 
-	// state.wg.Wait()
-	<-state.chans.quit
-	fmt.Println("Start() exited")
+		select {
+		case input := <-state.chans.commandsFromStdin:
+
+			if input == "exit" {
+				fmt.Println("called exit")
+				state.cancel()
+				state.wg.Wait()
+				fmt.Println("Start() exited")
+				return
+			}
+
+		case <-state.ctx.Done():
+			state.wg.Wait()
+			fmt.Println("Restart!")
+			time.Sleep(1500 * time.Millisecond)
+			continue
+
+		}
+	}
+
 }
 
 func incrementSeqNumber(seqNumber SeqNumber) SeqNumber {

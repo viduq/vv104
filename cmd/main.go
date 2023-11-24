@@ -11,8 +11,6 @@ func main() {
 	state := vv104.NewState()
 	state.Start()
 
-	fmt.Println(state)
-
 	fmt.Println("vv140 finished.")
 }
 

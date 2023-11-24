@@ -3,6 +3,7 @@ package vv104
 import (
 	"bytes"
 	"errors"
+	"fmt"
 )
 
 type Apdu struct {
@@ -24,6 +25,21 @@ func (apdu Apdu) CheckApdu() (bool, error) {
 		// ...
 	}
 	return true, nil
+}
+
+func (apdu Apdu) String() string {
+	switch apdu.Apci.FrameFormat {
+
+	case IFormatFrame:
+		fmt.Println("this is an i frame!")
+		return apdu.Asdu.String()
+	case SFormatFrame:
+		return fmt.Sprintf("S-Format (%d/%d)\n", apdu.Apci.Rsn, apdu.Apci.Ssn)
+	case UFormatFrame:
+		return apdu.Apci.UFormat.String()
+
+	}
+	return ""
 }
 
 func (apdu *Apdu) Serialize(state State) []byte {
@@ -101,6 +117,7 @@ func ParseApdu(buf *bytes.Buffer) (Apdu, error) {
 
 	// ctrl field 1
 	b, _ = buf.ReadByte()
+	fmt.Println("byte ctrl field 1:", b)
 	if (b & 0b0000_0001) == 0b0000_0000 {
 		// i frame
 		apdu.Apci.FrameFormat = IFormatFrame

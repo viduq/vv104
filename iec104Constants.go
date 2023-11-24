@@ -24,6 +24,8 @@ const (
 type UFormat byte
 
 // U-Format types
+//
+//go:generate stringer -type=UFormat
 const (
 	StartDTAct UFormat = 0x07
 	StartDTCon UFormat = 0x0b
