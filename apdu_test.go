@@ -180,7 +180,7 @@ func TestVariousFrames(t *testing.T) {
 	// execution loop: Serialize Apdus
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ans := tt.apdu.Serialize(state)
+			ans, _ := tt.apdu.Serialize(state)
 			if !bytes.Equal(ans, []byte(tt.apduBytes)) {
 				t.Errorf("\ngot : %x \nwant: %x\n", ans, tt.apduBytes)
 			}

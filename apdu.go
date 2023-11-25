@@ -42,7 +42,7 @@ func (apdu Apdu) String() string {
 	return ""
 }
 
-func (apdu *Apdu) Serialize(state State) []byte {
+func (apdu *Apdu) Serialize(state State) ([]byte, error) { // TODO error
 	asduBuf := new(bytes.Buffer)
 	apciBuf := new(bytes.Buffer)
 
@@ -53,15 +53,15 @@ func (apdu *Apdu) Serialize(state State) []byte {
 
 		s := [][]byte{apciBuf.Bytes(), asduBuf.Bytes()}
 		var emptySep []byte
-		return bytes.Join(s, emptySep)
+		return bytes.Join(s, emptySep), nil
 
 	case UFormatFrame, SFormatFrame:
 		apdu.Apci.Serialize(state, apciBuf, 0)
-		return apciBuf.Bytes()
+		return apciBuf.Bytes(), nil
 
 	}
 
-	return []byte{}
+	return []byte{}, nil
 
 }
 
@@ -117,7 +117,6 @@ func ParseApdu(buf *bytes.Buffer) (Apdu, error) {
 
 	// ctrl field 1
 	b, _ = buf.ReadByte()
-	fmt.Println("byte ctrl field 1:", b)
 	if (b & 0b0000_0001) == 0b0000_0000 {
 		// i frame
 		apdu.Apci.FrameFormat = IFormatFrame

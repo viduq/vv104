@@ -60,7 +60,9 @@ func (state *State) startServer() {
 				continue
 			}
 			fmt.Println("Connected from: ", conn.RemoteAddr())
-			go state.handleConnection(conn)
+			go state.receivingRoutine(conn)
+			go state.sendingRoutine(conn)
+			go state.serverStateMachine()
 
 			<-state.ctx.Done() // todo? other criteria?
 			return
@@ -77,12 +79,12 @@ func (state *State) startClient() {
 
 }
 
-func (state *State) handleConnection(conn net.Conn) {
-	fmt.Println("handleConnection started")
-	defer fmt.Println("handleConnection returned")
+func (state *State) receivingRoutine(conn net.Conn) {
+	fmt.Println("receivingRoutine started")
+	defer fmt.Println("receivingRoutine returned")
 	defer conn.Close()
 	var bytesbuf bytes.Buffer
-	buf := make([]byte, 256) // todo: read whole tcp frame
+	buf := make([]byte, 256) // todo: read multiple tcp frames from a whole tcp frame
 	state.wg.Add(1)
 	defer state.wg.Done()
 
@@ -101,22 +103,66 @@ func (state *State) handleConnection(conn net.Conn) {
 					continue
 				}
 				fmt.Println("Error reading:", err.Error())
-				fmt.Println("Restart because of error reading, handleConnection returns")
+				fmt.Println("Restart because of error reading, receivingRoutine returns")
 				state.cancel()
 				return
 			}
 
 			bytesbuf.Write(buf[:recvLen]) // Read from conn directly into bytesbuf?
-			fmt.Println(bytesbuf)
 			apdu, err := ParseApdu(&bytesbuf)
+			bytesbuf.Reset()
 			if err != nil {
 				fmt.Println("error parsing:", err)
+				fmt.Println("bytes:", bytesbuf)
 			} else {
-				fmt.Println("<<RX:", apdu)
+				// fmt.Println("<<RX:", apdu)
+				state.chans.received <- apdu
 			}
 
 		case <-state.ctx.Done():
-			fmt.Println("handleConnection received Done(), returns")
+			fmt.Println("receivingRoutine received Done(), returns")
+			return
+		}
+	}
+}
+
+func (state *State) sendingRoutine(conn net.Conn) {
+	fmt.Println("sendingRoutine started")
+	defer fmt.Println("sendingRoutine returned")
+	defer conn.Close()
+	var apduToSend Apdu
+	var buf []byte
+	var err error
+	state.wg.Add(1)
+	defer state.wg.Done()
+
+	for {
+		select {
+
+		case apduToSend = <-state.chans.toSend:
+			fmt.Println("sending...")
+
+			buf, err = apduToSend.Serialize(*state)
+			if err != nil {
+				fmt.Println("error serializing apdu", err)
+				continue
+			}
+			err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+			if err != nil {
+				fmt.Println(err)
+			}
+			_, err = conn.Write(buf)
+			if err != nil {
+				fmt.Println("error sending apdu", err)
+				fmt.Println("Error sending:", err.Error())
+				fmt.Println("Restart because of error sending, sendingRoutine returns")
+				state.cancel()
+				return
+			}
+			fmt.Println("TX>>:", apduToSend)
+
+		case <-state.ctx.Done():
+			fmt.Println("sendingRoutine received Done(), returns")
 			return
 		}
 	}

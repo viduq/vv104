@@ -8,18 +8,17 @@ import (
 )
 
 type State struct {
-	Config                Config
-	Iec104ConnectionState ConnectionState
-	TcpConnected          bool
-	ssn                   SeqNumber
-	rsn                   SeqNumber
-	chans                 AllChans
-	wg                    sync.WaitGroup
-	ctx                   context.Context
-	cancel                context.CancelFunc
+	Config    Config
+	ConnState ConnState
+	ssn       SeqNumber
+	rsn       SeqNumber
+	chans     AllChans
+	wg        sync.WaitGroup
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
-type ConnectionState int
+type ConnState int
 
 type AllChans struct {
 	commandsFromStdin chan string
@@ -28,11 +27,13 @@ type AllChans struct {
 }
 
 const (
-	STOPPED ConnectionState = iota
+	STOPPED ConnState = iota
 	STARTED
 	PENDING_UNCONFIRMED_STOPPED
 	PENDING_STARTED
 	PENDING_STOPPED
+	STOP_CONN
+	START_CONN
 )
 
 func NewState() State {
@@ -51,11 +52,10 @@ func NewState() State {
 			IoaStructured: false,
 			UseLocalTime:  false,
 		},
-		Iec104ConnectionState: 0,
-		TcpConnected:          false,
-		ssn:                   0,
-		rsn:                   0,
-		chans:                 AllChans{},
+		ConnState: 0,
+		ssn:       0,
+		rsn:       0,
+		chans:     AllChans{},
 		// wg:                    sync.WaitGroup{},
 	}
 }
@@ -92,6 +92,98 @@ func (state *State) Start() {
 	}
 
 }
+
+func (state *State) serverStateMachine() {
+	var apduReceived Apdu
+	var apduToSend Apdu
+
+	state.wg.Add(1)
+	defer state.wg.Done()
+
+	state.ConnState = STOPPED
+	fmt.Println("Entering state STOPPED")
+
+	for {
+		select {
+
+		case apduReceived = <-state.chans.received:
+			fmt.Println("<<RX:", apduReceived) // put after next if statement, if testfr shall not be printed
+
+			if apduReceived.Apci.UFormat == TestFRAct {
+				// always reply to testframes
+				apduToSend = NewApdu()
+				apduToSend.Apci.FrameFormat = UFormatFrame
+				apduToSend.Apci.UFormat = TestFRCon
+				state.chans.toSend <- apduToSend
+				continue
+			}
+
+			// state machine
+			switch state.ConnState {
+
+			case STOPPED:
+				if apduReceived.Apci.UFormat == StartDTAct {
+					// startdt act received
+					apduToSend = NewApdu()
+					apduToSend.Apci.FrameFormat = UFormatFrame
+					apduToSend.Apci.UFormat = StartDTCon
+					state.chans.toSend <- apduToSend
+					state.ConnState = STARTED
+					fmt.Println("Entering state STARTED")
+
+				}
+			}
+
+		case <-state.ctx.Done():
+			fmt.Println("serverStateMachine received ctx.Done, returns")
+			return
+		}
+	}
+}
+
+// for {
+// 	select {
+
+// 	default:
+
+// 		switch state.ConnState {
+// 		case START_CONN:
+// 			state.ConnState = STOPPED
+// 			fmt.Println("Entering state STOPPED")
+
+// 		case STOPPED:
+// 			apduReceived = <-state.chans.received
+// 			fmt.Println("<<RX:", apduReceived)
+
+// 			if apduReceived.Apci.FrameFormat == FrameFormat(StartDTAct) {
+// 				// startdt act received
+// 				apduToSend = NewApdu()
+// 				apduToSend.Apci.FrameFormat = UFormatFrame
+// 				apduToSend.Apci.UFormat = StartDTAct
+
+// 				state.chans.toSend <- apduToSend
+// 				state.ConnState = STARTED
+// 				fmt.Println("Entering state STARTED")
+
+// 			}
+
+// 		case STARTED:
+// 			apduReceived = <-state.chans.received
+// 			fmt.Println("apdu received in state machine")
+
+// 		case PENDING_UNCONFIRMED_STOPPED:
+
+// 		case STOP_CONN:
+
+// 		}
+
+// 	case <-state.ctx.Done():
+// 		fmt.Println("serverStateMachine received ctx.Done, returns")
+// 		return
+
+// 	}
+// }
+// }
 
 func incrementSeqNumber(seqNumber SeqNumber) SeqNumber {
 
