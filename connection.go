@@ -33,12 +33,12 @@ func (state *State) startServer() {
 
 	var l *net.TCPListener
 	l, err = net.ListenTCP("tcp", ipAndPort)
-	l.SetDeadline(time.Now().Add(2 * time.Second))
-	defer l.Close()
-
 	if err != nil {
 		panic(err)
 	}
+
+	l.SetDeadline(time.Now().Add(2 * time.Second))
+	defer l.Close()
 
 	state.wg.Add(1)
 	defer state.wg.Done()
@@ -51,9 +51,12 @@ func (state *State) startServer() {
 			if err != nil {
 				if err, ok := err.(*net.OpError); ok && err.Timeout() {
 					// it was a timeout
+					// fmt.Println("timeout")a
+					l.SetDeadline(time.Now().Add(2 * time.Second))
+					continue
 				}
 				// other problem
-				fmt.Println(err)
+				fmt.Println("accept error (not timeout)", err)
 				continue
 			}
 			fmt.Println("Connected from: ", conn.RemoteAddr())
