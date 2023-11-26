@@ -62,8 +62,11 @@ func NewState() State {
 
 func (state *State) Start() {
 	state.Config.ParseFlags()
-	state.chans.commandsFromStdin = make(chan string, 30)
-	go readCommandsFromStdIn(state.chans.commandsFromStdin) // never exits
+	if state.Config.InteractiveMode {
+		state.chans.commandsFromStdin = make(chan string, 30)
+		go readCommandsFromStdIn(state.chans.commandsFromStdin) // never exits
+		go state.evaluateCommandsFromStdIn()
+	}
 
 	for {
 		state.chans.received = make(chan Apdu, state.Config.W)
@@ -71,26 +74,15 @@ func (state *State) Start() {
 		state.ctx, state.cancel = context.WithCancel(context.Background())
 		go state.startConnection()
 
-		select {
-		case input := <-state.chans.commandsFromStdin:
-
-			if input == "exit" {
-				fmt.Println("called exit")
-				state.cancel()
-				state.wg.Wait()
-				fmt.Println("Start() exited")
-				return
-			}
-
-		case <-state.ctx.Done():
-			state.wg.Wait()
-			fmt.Println("Restart!")
-			time.Sleep(1500 * time.Millisecond)
-			continue
-
+		if state.Config.InteractiveMode {
+			go state.evaluateCommandsFromStdIn()
 		}
-	}
 
+		<-state.ctx.Done()
+		state.wg.Wait()
+		fmt.Println("Restart!")
+		time.Sleep(1500 * time.Millisecond)
+	}
 }
 
 func (state *State) serverStateMachine() {
@@ -130,6 +122,16 @@ func (state *State) serverStateMachine() {
 					state.chans.toSend <- apduToSend
 					state.ConnState = STARTED
 					fmt.Println("Entering state STARTED")
+
+				}
+			case STARTED:
+				if apduReceived.Apci.UFormat == StopDTAct {
+					// stopdt act received
+					apduToSend.Apci.FrameFormat = UFormatFrame
+					apduToSend.Apci.UFormat = StopDTCon
+					state.chans.toSend <- apduToSend
+					state.ConnState = STOPPED
+					fmt.Println("Entering state STOPPED")
 
 				}
 			}
