@@ -15,7 +15,7 @@ func (state *State) startConnection() {
 		fmt.Println("Starting Client")
 		state.startClient()
 	} else {
-		panic("can not start, config mode is nor server nor client")
+		panic("can not start, config mode is neither server nor client")
 	}
 }
 
@@ -62,7 +62,7 @@ func (state *State) startServer() {
 			fmt.Println("Connected from: ", conn.RemoteAddr())
 			go state.receivingRoutine(conn)
 			go state.sendingRoutine(conn)
-			go state.serverStateMachine()
+			go state.connectionStateMachine()
 
 			<-state.ctx.Done() // todo? other criteria?
 			return
@@ -76,6 +76,43 @@ func (state *State) startServer() {
 }
 
 func (state *State) startClient() {
+	fmt.Println("startClient started")
+	defer fmt.Println("startClient returned")
+
+	var err error
+
+	ipAndPortStr := state.Config.Ipv4Addr + ":" + fmt.Sprint(state.Config.Port)
+	ipAndPort, err := net.ResolveTCPAddr("tcp", ipAndPortStr)
+	if err != nil {
+		panic(err)
+	}
+
+	state.wg.Add(1)
+	defer state.wg.Done()
+
+	for {
+		select {
+		default:
+
+			conn, err := net.DialTCP("tcp", nil, ipAndPort)
+			if err != nil {
+				fmt.Println("dial error", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			fmt.Println("Connected to:", conn.RemoteAddr())
+			go state.receivingRoutine(conn)
+			go state.sendingRoutine(conn)
+			go state.connectionStateMachine()
+
+			<-state.ctx.Done() // todo? other criteria?
+			return
+
+		case <-state.ctx.Done():
+			fmt.Println("startClient received Done(), returns")
+			return
+		}
+	}
 
 }
 
@@ -109,14 +146,16 @@ func (state *State) receivingRoutine(conn net.Conn) {
 			}
 
 			bytesbuf.Write(buf[:recvLen]) // Read from conn directly into bytesbuf?
-			apdu, err := ParseApdu(&bytesbuf)
+			var received ApduOrNotifier
+			received.notifier = NO_NOTIFICATION
+			received.apdu, err = ParseApdu(&bytesbuf)
 			bytesbuf.Reset()
 			if err != nil {
 				fmt.Println("error parsing:", err)
 				fmt.Println("bytes:", bytesbuf)
 			} else {
 				// fmt.Println("<<RX:", apdu)
-				state.chans.received <- apdu
+				state.chans.received <- received
 			}
 
 		case <-state.ctx.Done():
@@ -140,7 +179,6 @@ func (state *State) sendingRoutine(conn net.Conn) {
 		select {
 
 		case apduToSend = <-state.chans.toSend:
-			fmt.Println("sending...")
 
 			buf, err = apduToSend.Serialize(*state)
 			if err != nil {
@@ -159,7 +197,19 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				state.cancel()
 				return
 			}
+			if state.ConnState != STARTED {
+				if apduToSend.Apci.FrameFormat == IFormatFrame {
+					fmt.Println("IEC 104 connection is not started. Can not send I-Format")
+					continue
+				}
+			}
 			fmt.Println("TX>>:", apduToSend)
+			if apduToSend.Apci.UFormat == StopDTAct {
+				// notify state machine
+				var notification ApduOrNotifier
+				notification.apdu = NewApdu() // dummy
+				notification.notifier = STOPDT_ACT_SENT
+			}
 
 		case <-state.ctx.Done():
 			fmt.Println("sendingRoutine received Done(), returns")

@@ -1,6 +1,8 @@
 package vv104
 
-import "flag"
+import (
+	"flag"
+)
 
 type Config struct {
 	Mode            string `json:"mode"`
@@ -20,21 +22,23 @@ type Config struct {
 
 func (config *Config) ParseFlags() {
 
-	clientPtr := flag.Bool("s", false, "Connection mode: For Server (Controlled station) use '-s'. For Client (Controlling station) use without flag (default)")
+	serverPtr := flag.Bool("s", false, "Connection mode: For Server (Controlled station) use '-s'. For Client (Controlling station) use without flag (default)")
 	ipPtr := flag.String("h", "127.0.0.1", "IP address")
 	interactivePtr := flag.Bool("i", true, "Start in interactive mode, control program with cli commands")
-
+	portPtr := flag.Int("p", 2404, "Port")
 	flag.Parse()
 
-	if *clientPtr {
+	if *serverPtr {
 		config.Mode = "server"
 	} else {
 		config.Mode = "client"
 	}
 
 	config.Ipv4Addr = *ipPtr
+	config.InteractiveMode = *interactivePtr
+	config.Port = *portPtr
+
 	// todo
-	config.Port = 2404
 	config.AutoAck = true
 	config.K = 12
 	config.W = 8
@@ -42,7 +46,6 @@ func (config *Config) ParseFlags() {
 	config.T2 = 10
 	config.T3 = 20
 	config.IoaStructured = false
-	config.InteractiveMode = *interactivePtr
 	config.UseLocalTime = false
 
 }

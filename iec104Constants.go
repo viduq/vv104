@@ -9,19 +9,13 @@ type Ioa uint32
 type FrameFormat byte
 type IntVal int32
 type FloatVal float32
-
-type NumberValue interface {
-	int32 | float32 // add ~ to support underlying types?
-
-}
+type UFormat byte
 
 const (
 	IFormatFrame FrameFormat = 0
 	SFormatFrame FrameFormat = 1
 	UFormatFrame FrameFormat = 3
 )
-
-type UFormat byte
 
 // U-Format types
 //

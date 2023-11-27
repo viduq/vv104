@@ -22,9 +22,24 @@ type ConnState int
 
 type AllChans struct {
 	commandsFromStdin chan string
-	received          chan Apdu
+	received          chan ApduOrNotifier
 	toSend            chan Apdu
 }
+
+// is used as the received channel, sometimes we need
+// to make notifications to the state machine, which always blocks on this channel
+type ApduOrNotifier struct {
+	apdu     Apdu
+	notifier notifier
+}
+
+type notifier int
+
+const (
+	NO_NOTIFICATION notifier = iota
+	JUMPSTART
+	STOPDT_ACT_SENT
+)
 
 const (
 	STOPPED ConnState = iota
@@ -39,18 +54,19 @@ const (
 func NewState() State {
 	return State{
 		Config: Config{
-			Mode:          "",
-			Ipv4Addr:      "",
-			Port:          0,
-			Casdu:         0,
-			AutoAck:       false,
-			K:             0,
-			W:             0,
-			T1:            0,
-			T2:            0,
-			T3:            0,
-			IoaStructured: false,
-			UseLocalTime:  false,
+			Mode:            "",
+			Ipv4Addr:        "",
+			Port:            0,
+			Casdu:           0,
+			AutoAck:         false,
+			K:               0,
+			W:               0,
+			T1:              0,
+			T2:              0,
+			T3:              0,
+			IoaStructured:   false,
+			InteractiveMode: false,
+			UseLocalTime:    false,
 		},
 		ConnState: 0,
 		ssn:       0,
@@ -69,7 +85,7 @@ func (state *State) Start() {
 	}
 
 	for {
-		state.chans.received = make(chan Apdu, state.Config.W)
+		state.chans.received = make(chan ApduOrNotifier, state.Config.W)
 		state.chans.toSend = make(chan Apdu, state.Config.K)
 		state.ctx, state.cancel = context.WithCancel(context.Background())
 		go state.startConnection()
@@ -80,14 +96,17 @@ func (state *State) Start() {
 
 		<-state.ctx.Done()
 		state.wg.Wait()
-		fmt.Println("Restart!")
+		// fmt.Println("Restart!")
 		time.Sleep(1500 * time.Millisecond)
 	}
 }
 
-func (state *State) serverStateMachine() {
-	var apduReceived Apdu
+func (state *State) connectionStateMachine() {
+	var received ApduOrNotifier
 	var apduToSend Apdu
+	var apduReceived Apdu
+	isServer := state.Config.Mode == "server"
+	isClient := state.Config.Mode == "client"
 
 	state.wg.Add(1)
 	defer state.wg.Done()
@@ -95,11 +114,23 @@ func (state *State) serverStateMachine() {
 	state.ConnState = STOPPED
 	fmt.Println("Entering state STOPPED")
 
+	if isClient {
+		// we need to hop one time over the blocking received-channel,
+		// therefore we send a notification and the (empty) apdu will be ignored
+		received.apdu = NewApdu()
+		received.notifier = JUMPSTART
+		state.chans.received <- received
+	}
+
 	for {
 		select {
 
-		case apduReceived = <-state.chans.received:
-			fmt.Println("<<RX:", apduReceived) // put after next if statement, if testfr shall not be printed
+		case received = <-state.chans.received:
+			apduReceived = received.apdu
+			if received.notifier == NO_NOTIFICATION {
+				// apdu received, print it
+				fmt.Println("<<RX:", received.apdu)
+			}
 
 			if apduReceived.Apci.UFormat == TestFRAct {
 				// always reply to testframes
@@ -114,24 +145,64 @@ func (state *State) serverStateMachine() {
 			switch state.ConnState {
 
 			case STOPPED:
-				if apduReceived.Apci.UFormat == StartDTAct {
-					// startdt act received
-					apduToSend = NewApdu()
-					apduToSend.Apci.FrameFormat = UFormatFrame
-					apduToSend.Apci.UFormat = StartDTCon
-					state.chans.toSend <- apduToSend
-					state.ConnState = STARTED
-					fmt.Println("Entering state STARTED")
+				if isServer {
+					if apduReceived.Apci.UFormat == StartDTAct {
+						// startdt act received
+						apduToSend = NewApdu()
+						apduToSend.Apci.FrameFormat = UFormatFrame
+						apduToSend.Apci.UFormat = StartDTCon
+						state.chans.toSend <- apduToSend
+						state.ConnState = STARTED
+						fmt.Println("Entering state STARTED")
+					}
 
 				}
-			case STARTED:
-				if apduReceived.Apci.UFormat == StopDTAct {
-					// stopdt act received
+				if isClient && received.notifier == JUMPSTART {
+					apduToSend = NewApdu()
 					apduToSend.Apci.FrameFormat = UFormatFrame
-					apduToSend.Apci.UFormat = StopDTCon
+					apduToSend.Apci.UFormat = StartDTAct
 					state.chans.toSend <- apduToSend
-					state.ConnState = STOPPED
+					state.ConnState = PENDING_STARTED
+					fmt.Println("Entering state PENDING_STARTED")
+
+				}
+
+			case PENDING_STARTED:
+				if apduReceived.Apci.UFormat == StartDTCon {
+					fmt.Println("Entering state STARTED")
+					state.ConnState = STARTED
+
+				}
+
+			case STARTED:
+				if isServer {
+					if apduReceived.Apci.UFormat == StopDTAct {
+						// stopdt act received
+						// todo if unconfirmed frames
+						// state.ConnState = PENDING_UNCONFIRMED_STOPPED
+						apduToSend.Apci.FrameFormat = UFormatFrame
+						apduToSend.Apci.UFormat = StopDTCon
+						state.chans.toSend <- apduToSend
+						state.ConnState = STOPPED
+						fmt.Println("Entering state STOPPED")
+
+					}
+				}
+				if isClient {
+					if received.notifier == STOPDT_ACT_SENT {
+						// we have sent stopdt act as a client
+
+						// todo if unconfirmed frames
+						// state.ConnState = PENDING_UNCONFIRMED_STOPPED
+
+						state.ConnState = PENDING_STOPPED
+						fmt.Println("Entering state PENDING_STOPPED")
+					}
+				}
+			case PENDING_STOPPED:
+				if apduReceived.Apci.UFormat == StopDTCon {
 					fmt.Println("Entering state STOPPED")
+					state.ConnState = STOPPED
 
 				}
 			}
