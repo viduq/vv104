@@ -17,6 +17,12 @@ type State struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 	dt_act_sent UFormat // for notification of state machine if a startdt_act or stopdt_act was sent
+	tickers     tickers
+}
+type tickers struct {
+	t1ticker time.Ticker
+	t2ticker time.Ticker
+	t3ticker time.Ticker
 }
 
 type ConnState int
@@ -109,8 +115,9 @@ func (state *State) connectionStateMachine() {
 		// block until apdu is received. some apdus are used as internal notifications with special type ids (are not sent)
 		case apduReceived = <-state.chans.received:
 			if apduReceived.Asdu.TypeId < INTERNAL_STATE_MACHINE_NOTIFIER {
-				// apdu received, print only if it is not an internal notification
+				// real apdu received, not an internal notification
 				fmt.Println("<<RX:", apduReceived)
+				state.tickers.t3ticker.Reset(time.Duration(state.Config.T3) * time.Second)
 			}
 
 			if apduReceived.Apci.UFormat == TestFRAct {

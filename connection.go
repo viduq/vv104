@@ -63,6 +63,7 @@ func (state *State) startServer() {
 			go state.receivingRoutine(conn)
 			go state.sendingRoutine(conn)
 			go state.connectionStateMachine()
+			go state.timerRoutine()
 
 			<-state.ctx.Done() // todo? other criteria?
 			return
@@ -104,6 +105,7 @@ func (state *State) startClient() {
 			go state.receivingRoutine(conn)
 			go state.sendingRoutine(conn)
 			go state.connectionStateMachine()
+			go state.timerRoutine()
 
 			<-state.ctx.Done() // todo? other criteria?
 			return
@@ -215,6 +217,34 @@ func (state *State) sendingRoutine(conn net.Conn) {
 
 		case <-state.ctx.Done():
 			fmt.Println("sendingRoutine received Done(), returns")
+			return
+		}
+	}
+}
+
+func (state *State) timerRoutine() {
+	fmt.Println("timerRoutine started")
+	defer fmt.Println("timerRoutine returned")
+	state.wg.Add(1)
+	defer state.wg.Done()
+
+	state.tickers.t1ticker = *time.NewTicker(time.Duration(state.Config.T1) * time.Second)
+	state.tickers.t2ticker = *time.NewTicker(time.Duration(state.Config.T2) * time.Second)
+	state.tickers.t3ticker = *time.NewTicker(time.Duration(state.Config.T3) * time.Second)
+
+	for {
+		select {
+
+		case <-state.tickers.t1ticker.C:
+			fmt.Println("t1 TIMEOUT")
+		case <-state.tickers.t2ticker.C:
+			fmt.Println("t2 TIMEOUT")
+		case <-state.tickers.t3ticker.C:
+			fmt.Println("t3 TIMEOUT")
+			state.chans.commandsFromStdin <- "testfr_act"
+
+		case <-state.ctx.Done():
+			fmt.Println("timerRoutine received Done(), returns")
 			return
 		}
 	}
