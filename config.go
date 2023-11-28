@@ -44,7 +44,7 @@ func (config *Config) ParseFlags() {
 	config.W = 8
 	config.T1 = 15
 	config.T2 = 10
-	config.T3 = 20
+	config.T3 = 10 //20
 	config.IoaStructured = false
 	config.UseLocalTime = false
 

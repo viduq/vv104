@@ -228,17 +228,17 @@ func (state *State) timerRoutine() {
 	state.wg.Add(1)
 	defer state.wg.Done()
 
-	state.tickers.t1ticker = *time.NewTicker(time.Duration(state.Config.T1) * time.Second)
-	state.tickers.t2ticker = *time.NewTicker(time.Duration(state.Config.T2) * time.Second)
-	state.tickers.t3ticker = *time.NewTicker(time.Duration(state.Config.T3) * time.Second)
+	state.tickers.t1ticker = time.NewTicker(time.Duration(state.Config.T1) * time.Second)
+	state.tickers.t2ticker = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
+	state.tickers.t3ticker = time.NewTicker(time.Duration(state.Config.T3) * time.Second)
 
 	for {
 		select {
 
-		case <-state.tickers.t1ticker.C:
-			fmt.Println("t1 TIMEOUT")
-		case <-state.tickers.t2ticker.C:
-			fmt.Println("t2 TIMEOUT")
+		// case <-state.tickers.t1ticker.C:
+		// 	fmt.Println("t1 TIMEOUT")
+		// case <-state.tickers.t2ticker.C:
+		// 	fmt.Println("t2 TIMEOUT")
 		case <-state.tickers.t3ticker.C:
 			fmt.Println("t3 TIMEOUT")
 			state.chans.commandsFromStdin <- "testfr_act"

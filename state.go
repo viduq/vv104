@@ -20,9 +20,9 @@ type State struct {
 	tickers     tickers
 }
 type tickers struct {
-	t1ticker time.Ticker
-	t2ticker time.Ticker
-	t3ticker time.Ticker
+	t1ticker *time.Ticker
+	t2ticker *time.Ticker
+	t3ticker *time.Ticker
 }
 
 type ConnState int
@@ -114,7 +114,7 @@ func (state *State) connectionStateMachine() {
 
 		// block until apdu is received. some apdus are used as internal notifications with special type ids (are not sent)
 		case apduReceived = <-state.chans.received:
-			if apduReceived.Asdu.TypeId < INTERNAL_STATE_MACHINE_NOTIFIER {
+			if (apduReceived.Apci.FrameFormat != IFormatFrame) || apduReceived.Asdu.TypeId < INTERNAL_STATE_MACHINE_NOTIFIER {
 				// real apdu received, not an internal notification
 				fmt.Println("<<RX:", apduReceived)
 				state.tickers.t3ticker.Reset(time.Duration(state.Config.T3) * time.Second)
@@ -200,50 +200,6 @@ func (state *State) connectionStateMachine() {
 		}
 	}
 }
-
-// for {
-// 	select {
-
-// 	default:
-
-// 		switch state.ConnState {
-// 		case START_CONN:
-// 			state.ConnState = STOPPED
-// 			fmt.Println("Entering state STOPPED")
-
-// 		case STOPPED:
-// 			apduReceived = <-state.chans.received
-// 			fmt.Println("<<RX:", apduReceived)
-
-// 			if apduReceived.Apci.FrameFormat == FrameFormat(StartDTAct) {
-// 				// startdt act received
-// 				apduToSend = NewApdu()
-// 				apduToSend.Apci.FrameFormat = UFormatFrame
-// 				apduToSend.Apci.UFormat = StartDTAct
-
-// 				state.chans.toSend <- apduToSend
-// 				state.ConnState = STARTED
-// 				fmt.Println("Entering state STARTED")
-
-// 			}
-
-// 		case STARTED:
-// 			apduReceived = <-state.chans.received
-// 			fmt.Println("apdu received in state machine")
-
-// 		case PENDING_UNCONFIRMED_STOPPED:
-
-// 		case STOP_CONN:
-
-// 		}
-
-// 	case <-state.ctx.Done():
-// 		fmt.Println("serverStateMachine received ctx.Done, returns")
-// 		return
-
-// 	}
-// }
-// }
 
 func incrementSeqNumber(seqNumber SeqNumber) SeqNumber {
 
