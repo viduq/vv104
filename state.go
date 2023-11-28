@@ -8,38 +8,24 @@ import (
 )
 
 type State struct {
-	Config    Config
-	ConnState ConnState
-	ssn       SeqNumber
-	rsn       SeqNumber
-	chans     AllChans
-	wg        sync.WaitGroup
-	ctx       context.Context
-	cancel    context.CancelFunc
+	Config      Config
+	connState   ConnState
+	ssn         SeqNumber
+	rsn         SeqNumber
+	chans       AllChans
+	wg          sync.WaitGroup
+	ctx         context.Context
+	cancel      context.CancelFunc
+	dt_act_sent UFormat // for notification of state machine if a startdt_act or stopdt_act was sent
 }
 
 type ConnState int
 
 type AllChans struct {
 	commandsFromStdin chan string
-	received          chan ApduOrNotifier
+	received          chan Apdu
 	toSend            chan Apdu
 }
-
-// is used as the received channel, sometimes we need
-// to make notifications to the state machine, which always blocks on this channel
-type ApduOrNotifier struct {
-	apdu     Apdu
-	notifier notifier
-}
-
-type notifier int
-
-const (
-	NO_NOTIFICATION notifier = iota
-	JUMPSTART
-	STOPDT_ACT_SENT
-)
 
 const (
 	STOPPED ConnState = iota
@@ -68,7 +54,7 @@ func NewState() State {
 			InteractiveMode: false,
 			UseLocalTime:    false,
 		},
-		ConnState: 0,
+		connState: 0,
 		ssn:       0,
 		rsn:       0,
 		chans:     AllChans{},
@@ -80,19 +66,18 @@ func (state *State) Start() {
 	state.Config.ParseFlags()
 	if state.Config.InteractiveMode {
 		state.chans.commandsFromStdin = make(chan string, 30)
-		go readCommandsFromStdIn(state.chans.commandsFromStdin) // never exits
-		go state.evaluateCommandsFromStdIn()
+		if state.Config.InteractiveMode {
+			go readCommandsFromStdIn(state.chans.commandsFromStdin) // never exits
+		}
 	}
 
 	for {
-		state.chans.received = make(chan ApduOrNotifier, state.Config.W)
+		state.chans.received = make(chan Apdu, state.Config.W)
 		state.chans.toSend = make(chan Apdu, state.Config.K)
 		state.ctx, state.cancel = context.WithCancel(context.Background())
+		// always start evaluateInteractiveCommands, we need it to control automatic sending, even if InteractiveMode is off
+		go state.evaluateInteractiveCommands()
 		go state.startConnection()
-
-		if state.Config.InteractiveMode {
-			go state.evaluateCommandsFromStdIn()
-		}
 
 		<-state.ctx.Done()
 		state.wg.Wait()
@@ -102,7 +87,6 @@ func (state *State) Start() {
 }
 
 func (state *State) connectionStateMachine() {
-	var received ApduOrNotifier
 	var apduToSend Apdu
 	var apduReceived Apdu
 	isServer := state.Config.Mode == "server"
@@ -111,25 +95,22 @@ func (state *State) connectionStateMachine() {
 	state.wg.Add(1)
 	defer state.wg.Done()
 
-	state.ConnState = STOPPED
+	state.connState = STOPPED
 	fmt.Println("Entering state STOPPED")
 
 	if isClient {
-		// we need to hop one time over the blocking received-channel,
-		// therefore we send a notification and the (empty) apdu will be ignored
-		received.apdu = NewApdu()
-		received.notifier = JUMPSTART
-		state.chans.received <- received
+		// we need to trigger stardt_act here, it will trigger a notification for the blocking received channel, to jump over it
+		state.chans.commandsFromStdin <- "startdt_act"
 	}
 
 	for {
 		select {
 
-		case received = <-state.chans.received:
-			apduReceived = received.apdu
-			if received.notifier == NO_NOTIFICATION {
-				// apdu received, print it
-				fmt.Println("<<RX:", received.apdu)
+		// block until apdu is received. some apdus are used as internal notifications with special type ids (are not sent)
+		case apduReceived = <-state.chans.received:
+			if apduReceived.Asdu.TypeId < INTERNAL_STATE_MACHINE_NOTIFIER {
+				// apdu received, print only if it is not an internal notification
+				fmt.Println("<<RX:", apduReceived)
 			}
 
 			if apduReceived.Apci.UFormat == TestFRAct {
@@ -142,7 +123,7 @@ func (state *State) connectionStateMachine() {
 			}
 
 			// state machine
-			switch state.ConnState {
+			switch state.connState {
 
 			case STOPPED:
 				if isServer {
@@ -152,25 +133,22 @@ func (state *State) connectionStateMachine() {
 						apduToSend.Apci.FrameFormat = UFormatFrame
 						apduToSend.Apci.UFormat = StartDTCon
 						state.chans.toSend <- apduToSend
-						state.ConnState = STARTED
+						state.connState = STARTED
 						fmt.Println("Entering state STARTED")
 					}
 
 				}
-				if isClient && received.notifier == JUMPSTART {
-					apduToSend = NewApdu()
-					apduToSend.Apci.FrameFormat = UFormatFrame
-					apduToSend.Apci.UFormat = StartDTAct
-					state.chans.toSend <- apduToSend
-					state.ConnState = PENDING_STARTED
+				if isClient && (state.dt_act_sent == StartDTAct) {
+					state.dt_act_sent = 0
+					state.connState = PENDING_STARTED
 					fmt.Println("Entering state PENDING_STARTED")
-
 				}
 
 			case PENDING_STARTED:
 				if apduReceived.Apci.UFormat == StartDTCon {
+
 					fmt.Println("Entering state STARTED")
-					state.ConnState = STARTED
+					state.connState = STARTED
 
 				}
 
@@ -183,26 +161,28 @@ func (state *State) connectionStateMachine() {
 						apduToSend.Apci.FrameFormat = UFormatFrame
 						apduToSend.Apci.UFormat = StopDTCon
 						state.chans.toSend <- apduToSend
-						state.ConnState = STOPPED
+						state.connState = STOPPED
 						fmt.Println("Entering state STOPPED")
 
 					}
 				}
 				if isClient {
-					if received.notifier == STOPDT_ACT_SENT {
+					if state.dt_act_sent == StopDTAct {
 						// we have sent stopdt act as a client
-
+						state.dt_act_sent = 0
 						// todo if unconfirmed frames
 						// state.ConnState = PENDING_UNCONFIRMED_STOPPED
 
-						state.ConnState = PENDING_STOPPED
+						state.connState = PENDING_STOPPED
 						fmt.Println("Entering state PENDING_STOPPED")
 					}
 				}
 			case PENDING_STOPPED:
 				if apduReceived.Apci.UFormat == StopDTCon {
+					// we have sent stopdt act as a client OR received Stopdt con (whichever comes first)
+					// bug: we could receive stopdt_con twice without having sent stopdt_act
 					fmt.Println("Entering state STOPPED")
-					state.ConnState = STOPPED
+					state.connState = STOPPED
 
 				}
 			}

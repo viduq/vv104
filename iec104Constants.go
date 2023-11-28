@@ -71,6 +71,8 @@ const (
 	C_RP_NA_1 TypeId = 105 // reset process command
 	C_TS_TA_1 TypeId = 107 // test command with time tag CP56Time2a
 
+	// "private" range for internal purposes, will not be sent
+	INTERNAL_STATE_MACHINE_NOTIFIER TypeId = 200
 )
 
 // Cause of Transmission

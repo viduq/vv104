@@ -146,16 +146,15 @@ func (state *State) receivingRoutine(conn net.Conn) {
 			}
 
 			bytesbuf.Write(buf[:recvLen]) // Read from conn directly into bytesbuf?
-			var received ApduOrNotifier
-			received.notifier = NO_NOTIFICATION
-			received.apdu, err = ParseApdu(&bytesbuf)
+			var receivedApdu Apdu
+			receivedApdu, err = ParseApdu(&bytesbuf)
 			bytesbuf.Reset()
 			if err != nil {
 				fmt.Println("error parsing:", err)
 				fmt.Println("bytes:", bytesbuf)
 			} else {
 				// fmt.Println("<<RX:", apdu)
-				state.chans.received <- received
+				state.chans.received <- receivedApdu
 			}
 
 		case <-state.ctx.Done():
@@ -185,6 +184,22 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				fmt.Println("error serializing apdu", err)
 				continue
 			}
+
+			if apduToSend.Apci.UFormat == StopDTAct || apduToSend.Apci.UFormat == StartDTAct {
+				// notify state machine
+				state.dt_act_sent = apduToSend.Apci.UFormat
+				apduNotify := NewApdu()
+				apduNotify.Asdu.TypeId = INTERNAL_STATE_MACHINE_NOTIFIER
+				state.chans.received <- apduNotify
+			}
+
+			if state.connState != STARTED {
+				if apduToSend.Apci.FrameFormat == IFormatFrame {
+					fmt.Println("IEC 104 connection is not started. Can not send I-Format")
+					continue
+				}
+			}
+			fmt.Println("TX>>:", apduToSend)
 			err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
 			if err != nil {
 				fmt.Println(err)
@@ -196,19 +211,6 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				fmt.Println("Restart because of error sending, sendingRoutine returns")
 				state.cancel()
 				return
-			}
-			if state.ConnState != STARTED {
-				if apduToSend.Apci.FrameFormat == IFormatFrame {
-					fmt.Println("IEC 104 connection is not started. Can not send I-Format")
-					continue
-				}
-			}
-			fmt.Println("TX>>:", apduToSend)
-			if apduToSend.Apci.UFormat == StopDTAct {
-				// notify state machine
-				var notification ApduOrNotifier
-				notification.apdu = NewApdu() // dummy
-				notification.notifier = STOPDT_ACT_SENT
 			}
 
 		case <-state.ctx.Done():

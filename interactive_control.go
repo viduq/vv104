@@ -15,7 +15,7 @@ func readCommandsFromStdIn(fromStdInchan chan string) {
 	}
 }
 
-func (state *State) evaluateCommandsFromStdIn() {
+func (state *State) evaluateInteractiveCommands() {
 	fmt.Println("evaluateCommandsFromStdIn started")
 	defer fmt.Println("evaluateCommandsFromStdIn returned")
 	state.wg.Add(1)
