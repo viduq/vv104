@@ -47,15 +47,15 @@ func (apdu *Apdu) Serialize(state State) ([]byte, error) { // TODO error
 
 	switch apdu.Apci.FrameFormat {
 	case IFormatFrame:
-		apdu.Asdu.Serialize(state, asduBuf)
-		apdu.Apci.Serialize(state, apciBuf, uint8(asduBuf.Len()))
+		apdu.Asdu.serialize(state, asduBuf)
+		apdu.Apci.serialize(state, apciBuf, uint8(asduBuf.Len()))
 
 		s := [][]byte{apciBuf.Bytes(), asduBuf.Bytes()}
 		var emptySep []byte
 		return bytes.Join(s, emptySep), nil
 
 	case UFormatFrame, SFormatFrame:
-		apdu.Apci.Serialize(state, apciBuf, 0)
+		apdu.Apci.serialize(state, apciBuf, 0)
 		return apciBuf.Bytes(), nil
 
 	}
@@ -127,7 +127,7 @@ func ParseApdu(buf *bytes.Buffer) (Apdu, error) {
 		b2, _ = buf.ReadByte()
 		apdu.Apci.Rsn = SeqNumber((uint16(b1) >> 1) + (uint16(b2) << 7))
 
-		apdu.Asdu, _ = ParseAsdu(buf)
+		apdu.Asdu, _ = parseAsdu(buf)
 
 	} else if (b & 0b0000_0011) == 0b0000_0001 {
 		// s frame

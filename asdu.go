@@ -37,7 +37,7 @@ func NewAsdu() *Asdu {
 	return &asdu
 }
 
-func (asdu *Asdu) AddInfoObject(infoObj InfoObj) error {
+func (asdu *Asdu) addInfoObject(infoObj InfoObj) error {
 	asdu.InfoObj = append(asdu.InfoObj, infoObj)
 
 	asdu.Num = Num(len(asdu.InfoObj))
@@ -45,7 +45,7 @@ func (asdu *Asdu) AddInfoObject(infoObj InfoObj) error {
 	return nil
 }
 
-func NewInfoObj() InfoObj {
+func newInfoObj() InfoObj {
 	ttag := time.Time{}
 	val := IntVal(0)
 
@@ -103,10 +103,10 @@ const (
 	Bit8
 )
 
-func SetBit(b, flag byte) byte    { return b | flag }
-func ClearBit(b, flag byte) byte  { return b &^ flag }
-func ToggleBit(b, flag byte) byte { return b ^ flag }
-func HasBit(b, flag byte) bool    { return b&flag != 0 }
+func setBit(b, flag byte) byte    { return b | flag }
+func clearBit(b, flag byte) byte  { return b &^ flag }
+func toggleBit(b, flag byte) byte { return b ^ flag }
+func hasBit(b, flag byte) bool    { return b&flag != 0 }
 
 type InfoObj struct {
 	Ioa         Ioa // Info Object Address
@@ -213,29 +213,29 @@ func (asdu Asdu) String() string {
 	return s
 }
 
-func (infoObj InfoObj) WriteInfo(typeId TypeId, buf *bytes.Buffer) error {
+func (infoObj InfoObj) writeInfo(typeId TypeId, buf *bytes.Buffer) error {
 	var b byte = 0
 	val := infoObj.Value.Value()
 
 	switch typeId {
 	case M_SP_NA_1:
 		b |= 0x01 & byte(val)
-		infoObj.WriteSiqDiq(b, buf)
+		infoObj.writeSiqDiq(b, buf)
 
 	case M_DP_NA_1:
 		b |= 0x03 & byte(val)
-		infoObj.WriteSiqDiq(b, buf)
+		infoObj.writeSiqDiq(b, buf)
 
 	case M_ME_TD_1: // todo add other mvs here
 		// two bytes info
 		// one byte quality
 		// { IV | NT | SB | BL | 0 | 0 | 0 | OV }
 		binary.Write(buf, binary.LittleEndian, int16(val))
-		infoObj.WriteQualitySeparateOctet(buf)
+		infoObj.writeQualitySeparateOctet(buf)
 
 	case C_SC_NA_1:
 		b |= 0x01 & byte(val)
-		infoObj.WriteCommandInfo(b, buf)
+		infoObj.writeCommandInfo(b, buf)
 
 	case C_IC_NA_1:
 		var b byte = 0
@@ -247,27 +247,27 @@ func (infoObj InfoObj) WriteInfo(typeId TypeId, buf *bytes.Buffer) error {
 }
 
 // Info and Quality for SP and DP
-func (infoObj InfoObj) WriteSiqDiq(b byte, buf *bytes.Buffer) {
+func (infoObj InfoObj) writeSiqDiq(b byte, buf *bytes.Buffer) {
 
 	if infoObj.Quality.Bl {
-		b = SetBit(b, Bit5)
+		b = setBit(b, Bit5)
 	} else {
-		b = ClearBit(b, Bit5)
+		b = clearBit(b, Bit5)
 	}
 	if infoObj.Quality.Sb {
-		b = SetBit(b, Bit6)
+		b = setBit(b, Bit6)
 	} else {
-		b = ClearBit(b, Bit6)
+		b = clearBit(b, Bit6)
 	}
 	if infoObj.Quality.Nt {
-		b = SetBit(b, Bit7)
+		b = setBit(b, Bit7)
 	} else {
-		b = ClearBit(b, Bit7)
+		b = clearBit(b, Bit7)
 	}
 	if infoObj.Quality.Iv {
-		b = SetBit(b, Bit8)
+		b = setBit(b, Bit8)
 	} else {
-		b = ClearBit(b, Bit8)
+		b = clearBit(b, Bit8)
 	}
 
 	buf.WriteByte(b)
@@ -275,44 +275,44 @@ func (infoObj InfoObj) WriteSiqDiq(b byte, buf *bytes.Buffer) {
 }
 
 // Value and CommandInfo for commands
-func (infoObj InfoObj) WriteCommandInfo(b byte, buf *bytes.Buffer) {
+func (infoObj InfoObj) writeCommandInfo(b byte, buf *bytes.Buffer) {
 	if infoObj.CommandInfo.Quoc.Select {
-		b = SetBit(b, Bit8)
+		b = setBit(b, Bit8)
 	} else {
-		b = ClearBit(b, Bit8)
+		b = clearBit(b, Bit8)
 	}
 	b |= (byte(infoObj.CommandInfo.Quoc.Qu) << 2)
 	buf.WriteByte(b)
 
 }
-func (infoObj InfoObj) WriteQualitySeparateOctet(buf *bytes.Buffer) {
+func (infoObj InfoObj) writeQualitySeparateOctet(buf *bytes.Buffer) {
 	var b byte
 
 	if infoObj.Quality.Ov {
-		b = SetBit(b, Bit1)
+		b = setBit(b, Bit1)
 	} else {
-		b = ClearBit(b, Bit1)
+		b = clearBit(b, Bit1)
 	}
 	// bits 2..4 reserve
 	if infoObj.Quality.Bl {
-		b = SetBit(b, Bit5)
+		b = setBit(b, Bit5)
 	} else {
-		b = ClearBit(b, Bit5)
+		b = clearBit(b, Bit5)
 	}
 	if infoObj.Quality.Sb {
-		b = SetBit(b, Bit6)
+		b = setBit(b, Bit6)
 	} else {
-		b = ClearBit(b, Bit6)
+		b = clearBit(b, Bit6)
 	}
 	if infoObj.Quality.Nt {
-		b = SetBit(b, Bit7)
+		b = setBit(b, Bit7)
 	} else {
-		b = ClearBit(b, Bit7)
+		b = clearBit(b, Bit7)
 	}
 	if infoObj.Quality.Iv {
-		b = SetBit(b, Bit8)
+		b = setBit(b, Bit8)
 	} else {
-		b = ClearBit(b, Bit8)
+		b = clearBit(b, Bit8)
 	}
 
 	buf.WriteByte(b)
@@ -346,31 +346,31 @@ func TypeIsTimeTagged(typeId TypeId) bool {
 	}
 }
 
-func (asdu Asdu) Serialize(state State, buf *bytes.Buffer) {
+func (asdu Asdu) serialize(state State, buf *bytes.Buffer) {
 	// todo err
 	var x byte = 0
 
 	buf.WriteByte(byte(asdu.TypeId))
 
 	if asdu.Sequence {
-		x = SetBit(x, Bit8)
+		x = setBit(x, Bit8)
 	} else {
-		x = ClearBit(x, Bit8)
+		x = clearBit(x, Bit8)
 	}
 	x |= byte(asdu.Num)
 	buf.WriteByte(x)
 
 	x = 0
 	if asdu.Test {
-		x = SetBit(x, Bit8)
+		x = setBit(x, Bit8)
 	} else {
-		x = ClearBit(x, Bit8)
+		x = clearBit(x, Bit8)
 	}
 
 	if asdu.Negative {
-		x = SetBit(x, Bit7)
+		x = setBit(x, Bit7)
 	} else {
-		x = ClearBit(x, Bit7)
+		x = clearBit(x, Bit7)
 	}
 
 	x |= byte(asdu.CauseTx)
@@ -389,17 +389,17 @@ func (asdu Asdu) Serialize(state State, buf *bytes.Buffer) {
 		b[2] = byte((ioa & 0xFF0000) >> 16)
 		binary.Write(buf, binary.LittleEndian, b)
 
-		infoObj.WriteInfo(asdu.TypeId, buf)
+		infoObj.writeInfo(asdu.TypeId, buf)
 
 		if TypeIsTimeTagged(asdu.TypeId) {
-			infoObj.SerializeTime(state, buf)
+			infoObj.serializeTime(state, buf)
 		}
 
 	}
 
 }
 
-func (infoObj InfoObj) SerializeTime(state State, buf *bytes.Buffer) {
+func (infoObj InfoObj) serializeTime(state State, buf *bytes.Buffer) {
 
 	// todo su, iv
 	var iv, su bool
@@ -411,11 +411,11 @@ func (infoObj InfoObj) SerializeTime(state State, buf *bytes.Buffer) {
 	var weekDay int
 
 	if iv {
-		ivMask = SetBit(ivMask, Bit8)
+		ivMask = setBit(ivMask, Bit8)
 	}
 
 	if su {
-		suMask = SetBit(suMask, Bit8)
+		suMask = setBit(suMask, Bit8)
 	}
 
 	if !infoObj.TimeTag.IsZero() {
@@ -446,7 +446,7 @@ func (infoObj InfoObj) SerializeTime(state State, buf *bytes.Buffer) {
 
 }
 
-func ParseAsdu(buf *bytes.Buffer) (Asdu, error) {
+func parseAsdu(buf *bytes.Buffer) (Asdu, error) {
 	var b byte
 	var b1 byte
 	asdu := NewAsdu()
@@ -457,7 +457,7 @@ func ParseAsdu(buf *bytes.Buffer) (Asdu, error) {
 	// variable structure verifier
 	b, _ = buf.ReadByte()
 
-	asdu.Sequence = HasBit(b, Bit8)
+	asdu.Sequence = hasBit(b, Bit8)
 	asdu.Num = Num(b & 0b0111_1111)
 
 	// cot
@@ -476,7 +476,7 @@ func ParseAsdu(buf *bytes.Buffer) (Asdu, error) {
 	for i := 0; i < int(asdu.Num); i++ {
 
 		var newInfoObj InfoObj
-		newInfoObj.ParseInfoObj(asdu.TypeId, buf)
+		newInfoObj.parseInfoObj(asdu.TypeId, buf)
 
 		asdu.InfoObj = append(asdu.InfoObj, newInfoObj)
 	}
@@ -484,7 +484,7 @@ func ParseAsdu(buf *bytes.Buffer) (Asdu, error) {
 	return *asdu, nil
 }
 
-func (infoObj *InfoObj) ParseInfoObj(typeId TypeId, buf *bytes.Buffer) error {
+func (infoObj *InfoObj) parseInfoObj(typeId TypeId, buf *bytes.Buffer) error {
 
 	ioa1, _ := buf.ReadByte()
 	ioa2, _ := buf.ReadByte()
@@ -495,15 +495,15 @@ func (infoObj *InfoObj) ParseInfoObj(typeId TypeId, buf *bytes.Buffer) error {
 	switch typeId {
 	case M_SP_NA_1, M_SP_TB_1, M_DP_NA_1, M_DP_TB_1:
 		// SP, DP
-		infoObj.ParseSiqDiq(typeId, buf)
+		infoObj.parseSiqDiq(typeId, buf)
 
 	case M_ME_NA_1, M_ME_TD_1, M_ME_NB_1, M_ME_TE_1, M_ME_NC_1, M_ME_TF_1:
 		// MV
-		infoObj.ParseMvValue(typeId, buf)
+		infoObj.parseMvValue(typeId, buf)
 
 	case C_SC_NA_1, C_SC_TA_1, C_DC_NA_1, C_DC_TA_1:
 		// SC, DC
-		infoObj.ParseScoDco(typeId, buf)
+		infoObj.parseScoDco(typeId, buf)
 
 	case C_IC_NA_1:
 		// GI
@@ -517,9 +517,9 @@ func (infoObj *InfoObj) ParseInfoObj(typeId TypeId, buf *bytes.Buffer) error {
 	return nil
 }
 
-func (infoObj *InfoObj) ParseSiqDiq(typeId TypeId, buf *bytes.Buffer) {
+func (infoObj *InfoObj) parseSiqDiq(typeId TypeId, buf *bytes.Buffer) {
 
-	b := infoObj.ParseQds(typeId, buf)
+	b := infoObj.parseQds(typeId, buf)
 
 	switch typeId {
 	case M_SP_NA_1, M_SP_TB_1:
@@ -530,7 +530,7 @@ func (infoObj *InfoObj) ParseSiqDiq(typeId TypeId, buf *bytes.Buffer) {
 	}
 }
 
-func (infoObj *InfoObj) ParseMvValue(typeId TypeId, buf *bytes.Buffer) {
+func (infoObj *InfoObj) parseMvValue(typeId TypeId, buf *bytes.Buffer) {
 
 	switch typeId {
 	case M_ME_NA_1, M_ME_TD_1, M_ME_NB_1, M_ME_TE_1:
@@ -541,10 +541,10 @@ func (infoObj *InfoObj) ParseMvValue(typeId TypeId, buf *bytes.Buffer) {
 		value := uint16(b1) + 256*uint16(b2)
 		infoObj.Value = IntVal(value)
 
-		infoObj.ParseQds(typeId, buf)
+		infoObj.parseQds(typeId, buf)
 
 		if TypeIsTimeTagged(typeId) {
-			infoObj.ParseTimeTag(buf)
+			infoObj.parseTimeTag(buf)
 		}
 
 	case M_ME_NC_1, M_ME_TF_1:
@@ -559,33 +559,33 @@ func (infoObj *InfoObj) ParseMvValue(typeId TypeId, buf *bytes.Buffer) {
 		bits := binary.LittleEndian.Uint32(bb)
 		infoObj.Value = FloatVal(math.Float32frombits(bits))
 
-		infoObj.ParseQds(typeId, buf)
+		infoObj.parseQds(typeId, buf)
 
 	}
 
 }
 
-func (infoObj *InfoObj) ParseQds(typeid TypeId, buf *bytes.Buffer) byte {
+func (infoObj *InfoObj) parseQds(typeid TypeId, buf *bytes.Buffer) byte {
 	b, _ := buf.ReadByte()
 
 	quality := &infoObj.Quality
 
-	if HasBit(b, Bit8) {
+	if hasBit(b, Bit8) {
 		quality.Iv = true
 	} else {
 		quality.Iv = false
 	}
-	if HasBit(b, Bit7) {
+	if hasBit(b, Bit7) {
 		quality.Nt = true
 	} else {
 		quality.Nt = false
 	}
-	if HasBit(b, Bit6) {
+	if hasBit(b, Bit6) {
 		quality.Sb = true
 	} else {
 		quality.Sb = false
 	}
-	if HasBit(b, Bit5) {
+	if hasBit(b, Bit5) {
 		quality.Bl = true
 	} else {
 		quality.Bl = false
@@ -595,7 +595,7 @@ func (infoObj *InfoObj) ParseQds(typeid TypeId, buf *bytes.Buffer) byte {
 	case M_ME_NA_1, M_ME_TD_1, M_ME_NB_1, M_ME_TE_1, M_ME_NC_1, M_ME_TF_1:
 		// all MV values have also OV flag
 
-		if HasBit(b, Bit1) {
+		if hasBit(b, Bit1) {
 			quality.Ov = true
 		} else {
 			quality.Ov = false
@@ -605,10 +605,10 @@ func (infoObj *InfoObj) ParseQds(typeid TypeId, buf *bytes.Buffer) byte {
 	return b
 }
 
-func (infoObj *InfoObj) ParseScoDco(typeId TypeId, buf *bytes.Buffer) {
+func (infoObj *InfoObj) parseScoDco(typeId TypeId, buf *bytes.Buffer) {
 	b, _ := buf.ReadByte()
 
-	infoObj.CommandInfo.Quoc.Select = HasBit(b, Bit8)
+	infoObj.CommandInfo.Quoc.Select = hasBit(b, Bit8)
 
 	switch typeId {
 	case C_SC_NA_1, C_SC_TA_1:
@@ -621,7 +621,7 @@ func (infoObj *InfoObj) ParseScoDco(typeId TypeId, buf *bytes.Buffer) {
 
 }
 
-func (infoObj *InfoObj) ParseTimeTag(buf *bytes.Buffer) {
+func (infoObj *InfoObj) parseTimeTag(buf *bytes.Buffer) {
 
 	b1, _ := buf.ReadByte()
 	b2, _ := buf.ReadByte()

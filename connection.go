@@ -40,8 +40,8 @@ func (state *State) startServer() {
 	l.SetDeadline(time.Now().Add(2 * time.Second))
 	defer l.Close()
 
-	state.wg.Add(1)
-	defer state.wg.Done()
+	state.Wg.Add(1)
+	defer state.Wg.Done()
 
 	for {
 		select {
@@ -65,10 +65,10 @@ func (state *State) startServer() {
 			go state.connectionStateMachine()
 			go state.timerRoutine()
 
-			<-state.ctx.Done() // todo? other criteria?
+			<-state.Ctx.Done() // todo? other criteria?
 			return
 
-		case <-state.ctx.Done():
+		case <-state.Ctx.Done():
 			fmt.Println("startServer received Done(), returns")
 			return
 		}
@@ -88,8 +88,8 @@ func (state *State) startClient() {
 		panic(err)
 	}
 
-	state.wg.Add(1)
-	defer state.wg.Done()
+	state.Wg.Add(1)
+	defer state.Wg.Done()
 
 	for {
 		select {
@@ -107,10 +107,10 @@ func (state *State) startClient() {
 			go state.connectionStateMachine()
 			go state.timerRoutine()
 
-			<-state.ctx.Done() // todo? other criteria?
+			<-state.Ctx.Done() // todo? other criteria?
 			return
 
-		case <-state.ctx.Done():
+		case <-state.Ctx.Done():
 			fmt.Println("startClient received Done(), returns")
 			return
 		}
@@ -124,8 +124,8 @@ func (state *State) receivingRoutine(conn net.Conn) {
 	defer conn.Close()
 	var bytesbuf bytes.Buffer
 	buf := make([]byte, 256) // todo: read multiple tcp frames from a whole tcp frame
-	state.wg.Add(1)
-	defer state.wg.Done()
+	state.Wg.Add(1)
+	defer state.Wg.Done()
 
 	for {
 		select {
@@ -143,7 +143,7 @@ func (state *State) receivingRoutine(conn net.Conn) {
 				}
 				fmt.Println("Error reading:", err.Error())
 				fmt.Println("Restart because of error reading, receivingRoutine returns")
-				state.cancel()
+				state.Cancel()
 				return
 			}
 
@@ -156,10 +156,10 @@ func (state *State) receivingRoutine(conn net.Conn) {
 				fmt.Println("bytes:", bytesbuf)
 			} else {
 				// fmt.Println("<<RX:", apdu)
-				state.chans.received <- receivedApdu
+				state.Chans.Received <- receivedApdu
 			}
 
-		case <-state.ctx.Done():
+		case <-state.Ctx.Done():
 			fmt.Println("receivingRoutine received Done(), returns")
 			return
 		}
@@ -173,13 +173,13 @@ func (state *State) sendingRoutine(conn net.Conn) {
 	var apduToSend Apdu
 	var buf []byte
 	var err error
-	state.wg.Add(1)
-	defer state.wg.Done()
+	state.Wg.Add(1)
+	defer state.Wg.Done()
 
 	for {
 		select {
 
-		case apduToSend = <-state.chans.toSend:
+		case apduToSend = <-state.Chans.ToSend:
 
 			buf, err = apduToSend.Serialize(*state)
 			if err != nil {
@@ -192,10 +192,10 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				state.dt_act_sent = apduToSend.Apci.UFormat
 				apduNotify := NewApdu()
 				apduNotify.Asdu.TypeId = INTERNAL_STATE_MACHINE_NOTIFIER
-				state.chans.received <- apduNotify
+				state.Chans.Received <- apduNotify
 			}
 
-			if state.connState != STARTED {
+			if state.ConnState != STARTED {
 				if apduToSend.Apci.FrameFormat == IFormatFrame {
 					fmt.Println("IEC 104 connection is not started. Can not send I-Format")
 					continue
@@ -211,11 +211,11 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				fmt.Println("error sending apdu", err)
 				fmt.Println("Error sending:", err.Error())
 				fmt.Println("Restart because of error sending, sendingRoutine returns")
-				state.cancel()
+				state.Cancel()
 				return
 			}
 
-		case <-state.ctx.Done():
+		case <-state.Ctx.Done():
 			fmt.Println("sendingRoutine received Done(), returns")
 			return
 		}
@@ -225,8 +225,8 @@ func (state *State) sendingRoutine(conn net.Conn) {
 func (state *State) timerRoutine() {
 	fmt.Println("timerRoutine started")
 	defer fmt.Println("timerRoutine returned")
-	state.wg.Add(1)
-	defer state.wg.Done()
+	state.Wg.Add(1)
+	defer state.Wg.Done()
 
 	state.tickers.t1ticker = time.NewTicker(time.Duration(state.Config.T1) * time.Second)
 	state.tickers.t2ticker = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
@@ -241,9 +241,9 @@ func (state *State) timerRoutine() {
 		// 	fmt.Println("t2 TIMEOUT")
 		case <-state.tickers.t3ticker.C:
 			fmt.Println("t3 TIMEOUT")
-			state.chans.commandsFromStdin <- "testfr_act"
+			state.Chans.commandsFromStdin <- "testfr_act"
 
-		case <-state.ctx.Done():
+		case <-state.Ctx.Done():
 			fmt.Println("timerRoutine received Done(), returns")
 			return
 		}

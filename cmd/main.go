@@ -9,67 +9,49 @@ func main() {
 	fmt.Println("vv140 started.")
 
 	state := vv104.NewState()
+	config := vv104.NewState().Config
+
+	config.ParseFlags()
+	state.Config = config
+
+	// go sendAFrame(&state)
 	state.Start()
 
 	fmt.Println("vv140 finished.")
 }
 
-// Generic aproach for InfoValue
-// var b vv104.FrameFormat = vv104.UFormat
-
-// fmt.Println(b)
-
-// a := vv104.IFormat
-// fmt.Println(a)
-
-// info := vv104.Info[int32]{
-// 	Value:   0,
-// 	Quality: vv104.Quality{},
+// func sendAFrame(state *vv104.State) {
+// 	infoObject := vv104.InfoObj{
+// 		Ioa:         10000,
+// 		Value:       vv104.IntVal(2),
+// 		Quality:     vv104.Quality{Bl: false, Sb: false, Nt: false, Iv: false, Ov: false},
+// 		CommandInfo: vv104.CommandInfo{},
+// 		TimeTag:     time.Time{},
+// 	}
+// 	var infoObjects []vv104.InfoObj
+// 	infoObjects = append(infoObjects, infoObject)
+// 	apdu := vv104.Apdu{
+// 		Apci: vv104.Apci{
+// 			FrameFormat: vv104.IFormatFrame,
+// 			Rsn:         0,
+// 			Ssn:         0,
+// 			UFormat:     0,
+// 		},
+// 		Asdu: vv104.Asdu{
+// 			TypeId:   vv104.M_DP_NA_1,
+// 			Num:      1,
+// 			Sequence: false,
+// 			CauseTx:  vv104.Spont,
+// 			Negative: false,
+// 			Test:     false,
+// 			OrigAddr: 0,
+// 			Casdu:    0,
+// 			InfoObj:  infoObjects,
+// 		},
+// 	}
+// 	// this only works if connected and startdt. TODO: notify via channel?
+// 	state.Chans.ToSend <- apdu
 // }
-// as := vv104.Asdu[int32]{
-// 	TypeId:   0,
-// 	Num:      0,
-// 	Sequence: false,
-// 	CauseTx:  0,
-// 	Negative: false,
-// 	Test:     false,
-// 	OrigAddr: 0,
-// 	Casdu:    0,
-// 	Ioa:      0,
-// 	Info:     info,
-// }
-
-// fmt.Println(as)
-
-// // interface aproach
-// var b_ vv104.FrameFormat = vv104.UFormat
-
-// fmt.Println(b_)
-
-// a_ := vv104.IFormat
-// fmt.Println(a_)
-
-// var val vv104.Floatvalue = 23
-
-// info_ := vv104.Info_{
-// 	Value:   val,
-// 	Quality: vv104.Quality{},
-// }
-
-// as_ := vv104.Asdu_{
-// 	TypeId:   0,
-// 	Num:      0,
-// 	Sequence: false,
-// 	CauseTx:  0,
-// 	Negative: false,
-// 	Test:     false,
-// 	OrigAddr: 0,
-// 	Casdu:    0,
-// 	Ioa:      0,
-// 	Info:     info_,
-// }
-
-// fmt.Println(as_)
 
 /*
 
