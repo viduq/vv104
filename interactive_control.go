@@ -37,8 +37,8 @@ func (state *State) evaluateInteractiveCommands() {
 
 func (state *State) evaluateInputSplit(inputSplit []string) {
 	var apdu Apdu
-	switch len(inputSplit) {
-	case 1:
+	switch inputArgsCount := len(inputSplit); {
+	case inputArgsCount == 1:
 		switch inputSplit[0] {
 		case "restart":
 			fmt.Println("called restart")
@@ -86,7 +86,8 @@ func (state *State) evaluateInputSplit(inputSplit []string) {
 			apdu.Apci.UFormat = TestFRCon
 			state.Chans.ToSend <- apdu
 		}
-	case 2:
+	case inputArgsCount > 2:
+
 	}
 
 }
