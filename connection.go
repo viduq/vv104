@@ -155,7 +155,18 @@ func (state *State) receivingRoutine(conn net.Conn) {
 				fmt.Println("error parsing:", err)
 				fmt.Println("bytes:", bytesbuf)
 			} else {
-				// fmt.Println("<<RX:", apdu)
+				if receivedApdu.Apci.FrameFormat == IFormatFrame {
+					// each received I-Format must be acknowledged
+					state.recvAck.queueApdu(receivedApdu)
+					weMustAck, seqNumberToAck := state.recvAck.checkForAck(state.Config.W)
+					if weMustAck {
+						sframe := NewApdu()
+						sframe.Apci.FrameFormat = SFormatFrame
+						sframe.Apci.Rsn = seqNumberToAck
+						state.Chans.ToSend <- sframe
+					}
+				}
+
 				state.Chans.Received <- receivedApdu
 			}
 
@@ -214,6 +225,10 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				state.Cancel()
 				return
 			}
+			if apduToSend.Apci.FrameFormat == SFormatFrame || apduToSend.Apci.FrameFormat == IFormatFrame {
+				// by sending an s- or i-format we have acknowledged items
+				state.recvAck.ackApdu(apduToSend.Apci.Rsn)
+			}
 
 		case <-state.Ctx.Done():
 			fmt.Println("sendingRoutine received Done(), returns")
@@ -230,7 +245,7 @@ func (state *State) timerRoutine() {
 
 	state.tickers.t1ticker = time.NewTicker(time.Duration(state.Config.T1) * time.Second)
 	state.tickers.t2ticker = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
-	state.tickers.t3ticker = time.NewTicker(time.Duration(state.Config.T3) * time.Second)
+	state.tickers.t3ticker = time.NewTicker(time.Duration(state.Config.T3-4) * time.Second)
 
 	for {
 		select {
