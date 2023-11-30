@@ -155,7 +155,24 @@ func (state *State) receivingRoutine(conn net.Conn) {
 				fmt.Println("error parsing:", err)
 				fmt.Println("bytes:", bytesbuf)
 			} else {
-				// fmt.Println("<<RX:", apdu)
+				if receivedApdu.Apci.FrameFormat == IFormatFrame {
+					// each received I-Format must be acknowledged
+					// this should be done directly after receiving (not in another goroutine, because of race conditions) (?)
+					state.recvAck.queueApdu(receivedApdu)
+					if state.recvAck.openFrames == 1 {
+						// was 0 before, new open frame
+						state.tickers.t2ticker.Reset(time.Duration(state.Config.T2) * time.Second)
+					}
+					weMustAck, seqNumberToAck := state.recvAck.checkForAck(state.Config.W)
+					if weMustAck {
+						fmt.Println("we must ack received items because w values open")
+						sframe := NewApdu()
+						sframe.Apci.FrameFormat = SFormatFrame
+						sframe.Apci.Rsn = seqNumberToAck
+						state.Chans.ToSend <- sframe
+					}
+				}
+
 				state.Chans.Received <- receivedApdu
 			}
 
@@ -214,6 +231,10 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				state.Cancel()
 				return
 			}
+			if apduToSend.Apci.FrameFormat == SFormatFrame || apduToSend.Apci.FrameFormat == IFormatFrame {
+				// by sending an s- or i-format we have acknowledged items
+				state.recvAck.ackApdu(apduToSend.Apci.Rsn, state.tickers.t2ticker, time.Duration(state.Config.T2))
+			}
 
 		case <-state.Ctx.Done():
 			fmt.Println("sendingRoutine received Done(), returns")
@@ -230,15 +251,24 @@ func (state *State) timerRoutine() {
 
 	state.tickers.t1ticker = time.NewTicker(time.Duration(state.Config.T1) * time.Second)
 	state.tickers.t2ticker = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
-	state.tickers.t3ticker = time.NewTicker(time.Duration(state.Config.T3) * time.Second)
+	state.tickers.t2ticker.Stop()
+	state.tickers.t3ticker = time.NewTicker(time.Duration(state.Config.T3-4) * time.Second)
 
 	for {
 		select {
 
 		// case <-state.tickers.t1ticker.C:
 		// 	fmt.Println("t1 TIMEOUT")
-		// case <-state.tickers.t2ticker.C:
-		// 	fmt.Println("t2 TIMEOUT")
+		case <-state.tickers.t2ticker.C:
+			if state.recvAck.openFrames > 0 {
+				fmt.Println("we must ack received items because t2 timeout")
+
+				sframe := NewApdu()
+				sframe.Apci.FrameFormat = SFormatFrame
+				sframe.Apci.Rsn = state.recvAck.seqNumber
+				state.Chans.ToSend <- sframe
+			}
+
 		case <-state.tickers.t3ticker.C:
 			fmt.Println("t3 TIMEOUT")
 			state.Chans.commandsFromStdin <- "testfr_act"
