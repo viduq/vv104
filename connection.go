@@ -233,7 +233,7 @@ func (state *State) sendingRoutine(conn net.Conn) {
 			}
 			if apduToSend.Apci.FrameFormat == SFormatFrame || apduToSend.Apci.FrameFormat == IFormatFrame {
 				// by sending an s- or i-format we have acknowledged items
-				state.recvAck.ackApdu(apduToSend.Apci.Rsn, state.tickers.t2ticker, time.Duration(state.Config.T2))
+				state.recvAck.ackApdu(apduToSend.Apci.Rsn, state.tickers.t2ticker, time.Duration(state.Config.T2)*time.Second)
 			}
 
 		case <-state.Ctx.Done():

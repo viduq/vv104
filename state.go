@@ -230,6 +230,7 @@ func newAck(length int) ack {
 
 // queueApdu is called when we receive i-formats, that need to be ack'ed
 func (ack *ack) queueApdu(apdu Apdu) {
+	ack.ring = ack.ring.Next()
 	ack.ring.Value = seqNumberAndTimetag{
 		seqNumber: apdu.Apci.Ssn,
 		timetag:   time.Now(),
@@ -237,7 +238,6 @@ func (ack *ack) queueApdu(apdu Apdu) {
 
 	ack.seqNumber = incrementSeqNumber(ack.seqNumber)
 	ack.openFrames++
-	ack.ring = ack.ring.Next()
 
 }
 
@@ -245,30 +245,37 @@ func (ack *ack) queueApdu(apdu Apdu) {
 func (ack *ack) ackApdu(seqNumber SeqNumber, t2ticker *time.Ticker, t2 time.Duration) {
 	var still_unacked int = 0
 
-	for i := 0; i < ack.ring.Len(); i++ {
-		fmt.Println(ack.ring)
-		ack.ring = ack.ring.Next()
-	}
-
 	// we go back in the ring to find the ack'ed sequence number
 	// the more we have to go back, the more frames are still unack'ed
 	for still_unacked = 0; still_unacked < ack.openFrames; still_unacked++ {
-		if ack.ring.Value.(seqNumberAndTimetag).seqNumber == seqNumber {
+		// fmt.Printf("%t\n", ack.ring.Value)
+		if ack.ring.Value.(seqNumberAndTimetag).seqNumber == seqNumber-1 {
 			// all acknowledged
-			fmt.Println("all acked", seqNumber)
-			fmt.Println("still unacked:", still_unacked)
+			// fmt.Println("all acked", seqNumber)
+			// fmt.Println("still unacked:", still_unacked)
 			ack.openFrames = still_unacked
-			timetag := ack.ring.Value.(seqNumberAndTimetag).timetag
-			frameIsUnackedTime := time.Now().Sub(timetag)
-			frameMustBeAckedIn := t2 - frameIsUnackedTime
-			fmt.Println("will be acked in ", frameMustBeAckedIn)
-			t2ticker.Reset(frameMustBeAckedIn * time.Second)
+			if still_unacked > 0 {
+
+				timetag := ack.ring.Value.(seqNumberAndTimetag).timetag
+				// fmt.Println("ttag", timetag)
+				// fmt.Println("tnow", time.Now())
+
+				frameIsUnackedTime := time.Now().Sub(timetag)
+				// fmt.Println("frameisUnacked", frameIsUnackedTime)
+				// fmt.Println("t2:", t2)
+
+				frameMustBeAckedIn := t2 - frameIsUnackedTime
+				// fmt.Println("will be acked in ", frameMustBeAckedIn)
+				t2ticker.Reset(frameMustBeAckedIn)
+			} else {
+				// we ack'ed all items, stop ticker
+				t2ticker.Stop()
+			}
 
 			break
-		} else {
-			ack.ring = ack.ring.Prev()
-
 		}
+
+		ack.ring = ack.ring.Prev()
 
 	}
 }
