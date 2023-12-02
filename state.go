@@ -243,18 +243,19 @@ func (ack *ack) queueApdu(apdu Apdu) {
 
 // ackApdu is called when we send an i- or s-format and acknowledge received frames
 func (ack *ack) ackApdu(seqNumber SeqNumber, t2ticker *time.Ticker, t2 time.Duration) {
-	var still_unacked int = 0
+	var stillUnacked int = 0
 
 	// we go back in the ring to find the ack'ed sequence number
 	// the more we have to go back, the more frames are still unack'ed
-	for still_unacked = 0; still_unacked < ack.openFrames; still_unacked++ {
+	for stillUnacked = 0; stillUnacked < ack.openFrames; stillUnacked++ {
 		// fmt.Printf("%t\n", ack.ring.Value)
 		if ack.ring.Value.(seqNumberAndTimetag).seqNumber == seqNumber-1 {
-			// all acknowledged
-			// fmt.Println("all acked", seqNumber)
+			// all until this seq number are acknowledged
+			// we might have received more already, which are still open (stillUnAcked)
+			// fmt.Println("all acked until", seqNumber)
 			// fmt.Println("still unacked:", still_unacked)
-			ack.openFrames = still_unacked
-			if still_unacked > 0 {
+			ack.openFrames = stillUnacked
+			if stillUnacked > 0 {
 
 				timetag := ack.ring.Value.(seqNumberAndTimetag).timetag
 				// fmt.Println("ttag", timetag)
@@ -269,6 +270,7 @@ func (ack *ack) ackApdu(seqNumber SeqNumber, t2ticker *time.Ticker, t2 time.Dura
 				t2ticker.Reset(frameMustBeAckedIn)
 			} else {
 				// we ack'ed all items, stop ticker
+				// TODO: Ticker should be mutexed, because we might stop it here, although it was just started by a received I frame!
 				t2ticker.Stop()
 			}
 
