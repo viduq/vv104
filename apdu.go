@@ -31,9 +31,9 @@ func (apdu Apdu) String() string {
 	switch apdu.Apci.FrameFormat {
 
 	case IFormatFrame:
-		return fmt.Sprintf("(%d/%d) ", apdu.Apci.Rsn, apdu.Apci.Ssn) + apdu.Asdu.String()
+		return fmt.Sprintf("(%d/%d) ", apdu.Apci.Ssn, apdu.Apci.Rsn) + apdu.Asdu.String()
 	case SFormatFrame:
-		return fmt.Sprintf("S-Format (%d/%d)\n", apdu.Apci.Rsn, apdu.Apci.Ssn)
+		return fmt.Sprintf("S-Format (%d)\n", apdu.Apci.Rsn)
 	case UFormatFrame:
 		return apdu.Apci.UFormat.String()
 
