@@ -24,6 +24,8 @@ func (apci *Apci) serialize(state State, buf *bytes.Buffer, asduLength uint8) {
 	buf.WriteByte(STARTBYTE)
 	apci.length = asduLength + 4
 	buf.WriteByte(byte(apci.length)) // todo check for overfow
+	apci.Ssn = state.sendAck.seqNumber
+	apci.Rsn = state.recvAck.seqNumber
 	apci.writeCtrlFields(state, buf)
 }
 

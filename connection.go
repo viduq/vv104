@@ -165,7 +165,7 @@ func (state *State) receivingRoutine(conn net.Conn) {
 					}
 					weMustAck, seqNumberToAck := state.recvAck.checkForAck(state.Config.W)
 					if weMustAck {
-						fmt.Println("we must ack received items because w values open")
+						// fmt.Println("we must ack received items because w values open")
 						sframe := NewApdu()
 						sframe.Apci.FrameFormat = SFormatFrame
 						sframe.Apci.Rsn = seqNumberToAck
@@ -199,6 +199,7 @@ func (state *State) sendingRoutine(conn net.Conn) {
 		case apduToSend = <-state.Chans.ToSend:
 
 			buf, err = apduToSend.Serialize(*state)
+			fmt.Println(buf)
 			if err != nil {
 				fmt.Println("error serializing apdu", err)
 				continue
@@ -232,6 +233,7 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				return
 			}
 			if apduToSend.Apci.FrameFormat == SFormatFrame || apduToSend.Apci.FrameFormat == IFormatFrame {
+				state.sendAck.seqNumber++
 				// by sending an s- or i-format we have acknowledged items
 				state.recvAck.ackApdu(apduToSend.Apci.Rsn, state.tickers.t2ticker, time.Duration(state.Config.T2)*time.Second)
 			}
@@ -261,7 +263,7 @@ func (state *State) timerRoutine() {
 		// 	fmt.Println("t1 TIMEOUT")
 		case <-state.tickers.t2ticker.C:
 			if state.recvAck.openFrames > 0 {
-				fmt.Println("we must ack received items because t2 timeout")
+				// fmt.Println("we must ack received items because t2 timeout")
 
 				sframe := NewApdu()
 				sframe.Apci.FrameFormat = SFormatFrame
@@ -270,7 +272,7 @@ func (state *State) timerRoutine() {
 			}
 
 		case <-state.tickers.t3ticker.C:
-			fmt.Println("t3 TIMEOUT")
+			// fmt.Println("t3 TIMEOUT")
 			state.Chans.commandsFromStdin <- "testfr_act"
 
 		case <-state.Ctx.Done():

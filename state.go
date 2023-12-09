@@ -123,7 +123,7 @@ func (state *State) connectionStateMachine() {
 			if (apduReceived.Apci.FrameFormat != IFormatFrame) || apduReceived.Asdu.TypeId < INTERNAL_STATE_MACHINE_NOTIFIER {
 				// real apdu received, not an internal notification
 				fmt.Println("<<RX:", apduReceived)
-				state.tickers.t3ticker.Reset(time.Duration(state.Config.T3-4) * time.Second)
+				state.tickers.t3ticker.Reset(time.Duration(state.Config.T3) * time.Second)
 			}
 
 			if apduReceived.Apci.UFormat == TestFRAct {
@@ -283,10 +283,10 @@ func (ack *ack) ackApdu(seqNumber SeqNumber, t2ticker *time.Ticker, t2 time.Dura
 }
 
 func (ack *ack) checkForAck(maxOpenFrames int) (bool, SeqNumber) {
-	if ack.openFrames > maxOpenFrames {
+	if ack.openFrames >= maxOpenFrames {
 		seqNumber := ack.seqNumber
-		fmt.Println("seq number to ack:", seqNumber)
-		fmt.Println("openFrames:", ack.openFrames)
+		// fmt.Println("seq number to ack:", seqNumber)
+		// fmt.Println("openFrames:", ack.openFrames)
 
 		return true, seqNumber
 	}

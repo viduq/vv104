@@ -85,7 +85,21 @@ func (state *State) evaluateInputSplit(inputSplit []string) {
 			apdu.Apci.FrameFormat = UFormatFrame
 			apdu.Apci.UFormat = TestFRCon
 			state.Chans.ToSend <- apdu
+
+		case "sp": // temporarily
+			sp := NewApdu()
+			infoObj := newInfoObj()
+			infoObj.Ioa = 12345
+			infoObj.Value = IntVal(1)
+			sp.Apci.FrameFormat = IFormatFrame
+			sp.Asdu.TypeId = M_SP_NA_1
+			sp.Asdu.CauseTx = Spont
+			sp.Asdu.Casdu = 1
+			sp.Asdu.addInfoObject(infoObj)
+
+			state.Chans.ToSend <- sp
 		}
+
 	case inputArgsCount > 2:
 
 	}
