@@ -156,6 +156,11 @@ func (state *State) receivingRoutine(conn net.Conn) {
 				fmt.Println("bytes:", bytesbuf)
 			} else {
 				if receivedApdu.Apci.FrameFormat == IFormatFrame {
+					// check if received ssn is okay
+					if receivedApdu.Apci.Ssn != state.recvAck.seqNumber {
+						fmt.Println("Error received SSn does not match internal state, received ssn: ", receivedApdu.Apci.Ssn, "state: ", state.recvAck.seqNumber)
+					}
+
 					// each received I-Format must be acknowledged
 					// this should be done directly after receiving (not in another goroutine, because of race conditions) (?)
 					state.recvAck.queueApdu(receivedApdu)
@@ -171,6 +176,7 @@ func (state *State) receivingRoutine(conn net.Conn) {
 						sframe.Apci.Rsn = seqNumberToAck
 						state.Chans.ToSend <- sframe
 					}
+
 				}
 
 				state.Chans.Received <- receivedApdu
@@ -199,7 +205,7 @@ func (state *State) sendingRoutine(conn net.Conn) {
 		case apduToSend = <-state.Chans.ToSend:
 
 			buf, err = apduToSend.Serialize(*state)
-			fmt.Println(buf)
+			// fmt.Println(buf)
 			if err != nil {
 				fmt.Println("error serializing apdu", err)
 				continue
