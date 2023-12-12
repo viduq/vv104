@@ -154,33 +154,37 @@ func (state *State) receivingRoutine(conn net.Conn) {
 			if err != nil {
 				fmt.Println("error parsing:", err)
 				fmt.Println("bytes:", bytesbuf)
-			} else {
-				if receivedApdu.Apci.FrameFormat == IFormatFrame {
-					// check if received ssn is okay
-					if receivedApdu.Apci.Ssn != state.recvAck.seqNumber {
-						fmt.Println("Error received SSn does not match internal state, received ssn: ", receivedApdu.Apci.Ssn, "state: ", state.recvAck.seqNumber)
-					}
+				continue
+			}
 
-					// each received I-Format must be acknowledged
-					// this should be done directly after receiving (not in another goroutine, because of race conditions) (?)
-					state.recvAck.queueApdu(receivedApdu)
-					if state.recvAck.openFrames == 1 {
-						// was 0 before, new open frame
-						state.tickers.t2ticker.Reset(time.Duration(state.Config.T2) * time.Second)
-					}
-					weMustAck, seqNumberToAck := state.recvAck.checkForAck(state.Config.W)
-					if weMustAck {
-						// fmt.Println("we must ack received items because w values open")
-						sframe := NewApdu()
-						sframe.Apci.FrameFormat = SFormatFrame
-						sframe.Apci.Rsn = seqNumberToAck
-						state.Chans.ToSend <- sframe
-					}
-
+			if receivedApdu.Apci.FrameFormat == IFormatFrame {
+				// check if received ssn is okay
+				if receivedApdu.Apci.Ssn != state.recvAck.seqNumber {
+					fmt.Println("Error received SSn does not match internal state, received ssn: ", receivedApdu.Apci.Ssn, "state: ", state.recvAck.seqNumber)
 				}
 
-				state.Chans.Received <- receivedApdu
+				// each received I-Format must be acknowledged
+				// this should be done directly after receiving (not in another goroutine, because of race conditions) (?)
+				state.recvAck.queueApdu(receivedApdu)
+				if state.recvAck.openFrames == 1 {
+					// was 0 before, new open frame
+					state.tickers.t2tickerReceivedItems.Reset(time.Duration(state.Config.T2) * time.Second)
+				}
+				weMustAck, seqNumberToAck := state.recvAck.checkForAck(state.Config.W)
+				if weMustAck {
+					// fmt.Println("we must ack received items because w values open")
+					sframe := NewApdu()
+					sframe.Apci.FrameFormat = SFormatFrame
+					sframe.Apci.Rsn = seqNumberToAck
+					state.Chans.ToSend <- sframe
+				}
 			}
+			if receivedApdu.Apci.FrameFormat == IFormatFrame || receivedApdu.Apci.FrameFormat == SFormatFrame {
+				// each received I- or S-Format acknowledges some of our sent frames
+				state.sendAck.ackApdu(receivedApdu.Apci.Rsn, state.tickers.t2tickerSentItems, time.Duration(state.Config.T2)*time.Second)
+			}
+
+			state.Chans.Received <- receivedApdu
 
 		case <-state.Ctx.Done():
 			fmt.Println("receivingRoutine received Done(), returns")
@@ -224,6 +228,13 @@ func (state *State) sendingRoutine(conn net.Conn) {
 					fmt.Println("IEC 104 connection is not started. Can not send I-Format")
 					continue
 				}
+			} else {
+				// started
+				if state.sendAck.openFrames >= state.Config.K {
+					// we must not send anymore, wait for acknowledgement
+					fmt.Println("we must not send anymore, wait for acknowledgement TODO")
+					// TODO block on a channel
+				}
 			}
 			fmt.Println("TX>>:", apduToSend)
 			err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
@@ -239,9 +250,18 @@ func (state *State) sendingRoutine(conn net.Conn) {
 				return
 			}
 			if apduToSend.Apci.FrameFormat == SFormatFrame || apduToSend.Apci.FrameFormat == IFormatFrame {
-				state.sendAck.seqNumber++
 				// by sending an s- or i-format we have acknowledged items
-				state.recvAck.ackApdu(apduToSend.Apci.Rsn, state.tickers.t2ticker, time.Duration(state.Config.T2)*time.Second)
+				state.recvAck.ackApdu(apduToSend.Apci.Rsn, state.tickers.t2tickerReceivedItems, time.Duration(state.Config.T2)*time.Second)
+			}
+			if apduToSend.Apci.FrameFormat == IFormatFrame {
+				// each sent frame must be ack'ed by the communication partner in a certain time
+				state.sendAck.queueApdu(apduToSend)
+
+				if state.sendAck.openFrames == 1 {
+					// was 0 before, new open frame
+					state.tickers.t2tickerSentItems.Reset(time.Duration(state.Config.T2) * time.Second)
+				}
+
 			}
 
 		case <-state.Ctx.Done():
@@ -258,8 +278,10 @@ func (state *State) timerRoutine() {
 	defer state.Wg.Done()
 
 	state.tickers.t1ticker = time.NewTicker(time.Duration(state.Config.T1) * time.Second)
-	state.tickers.t2ticker = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
-	state.tickers.t2ticker.Stop()
+	state.tickers.t2tickerReceivedItems = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
+	state.tickers.t2tickerReceivedItems.Stop()
+	state.tickers.t2tickerSentItems = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
+	state.tickers.t2tickerSentItems.Stop()
 	state.tickers.t3ticker = time.NewTicker(time.Duration(state.Config.T3-4) * time.Second)
 
 	for {
@@ -267,7 +289,7 @@ func (state *State) timerRoutine() {
 
 		// case <-state.tickers.t1ticker.C:
 		// 	fmt.Println("t1 TIMEOUT")
-		case <-state.tickers.t2ticker.C:
+		case <-state.tickers.t2tickerReceivedItems.C:
 			if state.recvAck.openFrames > 0 {
 				// fmt.Println("we must ack received items because t2 timeout")
 
@@ -276,6 +298,10 @@ func (state *State) timerRoutine() {
 				sframe.Apci.Rsn = state.recvAck.seqNumber
 				state.Chans.ToSend <- sframe
 			}
+
+		case <-state.tickers.t2tickerSentItems.C:
+			fmt.Println("the communication partner did not acknowledge in the specified time, quitting...")
+			state.Cancel()
 
 		case <-state.tickers.t3ticker.C:
 			// fmt.Println("t3 TIMEOUT")

@@ -21,8 +21,10 @@ type State struct {
 	tickers     tickers
 }
 type tickers struct {
-	t1ticker *time.Ticker
-	t2ticker *time.Ticker
+	t1ticker              *time.Ticker
+	t2tickerReceivedItems *time.Ticker
+	t2tickerSentItems     *time.Ticker
+
 	t3ticker *time.Ticker
 }
 
@@ -228,7 +230,7 @@ func newAck(length int) ack {
 	return ack
 }
 
-// queueApdu is called when we receive i-formats, that need to be ack'ed
+// queueApdu adds i-formats to the ring, because they need to be ack'ed
 func (ack *ack) queueApdu(apdu Apdu) {
 	ack.ring = ack.ring.Next()
 	ack.ring.Value = seqNumberAndTimetag{
@@ -242,6 +244,7 @@ func (ack *ack) queueApdu(apdu Apdu) {
 }
 
 // ackApdu is called when we send an i- or s-format and acknowledge received frames
+// or if we receive an i- or s-format which acknowledges sent frames
 func (ack *ack) ackApdu(seqNumber SeqNumber, t2ticker *time.Ticker, t2 time.Duration) {
 	var stillUnacked int = 0
 
