@@ -31,7 +31,7 @@ type tickers struct {
 type ConnState int
 
 type AllChans struct {
-	commandsFromStdin chan string
+	CommandsFromStdin chan string
 	Received          chan Apdu
 	ToSend            chan Apdu
 }
@@ -74,14 +74,15 @@ func NewState() State {
 }
 
 func (state *State) Start() {
-	if state.Config.InteractiveMode {
-		state.Chans.commandsFromStdin = make(chan string, 30)
-		if state.Config.InteractiveMode {
-			go readCommandsFromStdIn(state.Chans.commandsFromStdin) // never exits
-		}
-	}
 
 	for {
+		if state.Config.InteractiveMode {
+			state.Chans.CommandsFromStdin = make(chan string, 30)
+			if state.Config.InteractiveMode {
+				go state.readCommandsFromStdIn() // never exits
+			}
+		}
+
 		state.Chans.Received = make(chan Apdu, state.Config.W)
 		state.Chans.ToSend = make(chan Apdu, state.Config.K)
 		state.Ctx, state.Cancel = context.WithCancel(context.Background())
@@ -114,7 +115,7 @@ func (state *State) connectionStateMachine() {
 
 	if isClient {
 		// we need to trigger stardt_act here, it will trigger a notification for the blocking received channel, to jump over it
-		state.Chans.commandsFromStdin <- "startdt_act"
+		state.Chans.CommandsFromStdin <- "startdt_act"
 	}
 
 	for {

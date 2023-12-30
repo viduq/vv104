@@ -7,11 +7,22 @@ import (
 	"strings"
 )
 
-func readCommandsFromStdIn(fromStdInchan chan string) {
+func (state *State) readCommandsFromStdIn() {
+	fmt.Println("readCommandsFromStdIn started ******")
 	sc := bufio.NewScanner(os.Stdin)
+	state.Wg.Add(1)
+	defer state.Wg.Done()
 
 	for sc.Scan() {
-		fromStdInchan <- sc.Text()
+		select {
+		default:
+			state.Chans.CommandsFromStdin <- sc.Text()
+
+		case <-state.Ctx.Done():
+			fmt.Println("readCommandsFromStdIn received Done(), returns")
+			return
+
+		}
 	}
 }
 
@@ -24,7 +35,7 @@ func (state *State) evaluateInteractiveCommands() {
 	for {
 		select {
 
-		case input := <-state.Chans.commandsFromStdin:
+		case input := <-state.Chans.CommandsFromStdin:
 			inputSplit := strings.Split(input, " ")
 			go state.evaluateInputSplit(inputSplit)
 
@@ -49,6 +60,11 @@ func (state *State) evaluateInputSplit(inputSplit []string) {
 			state.Cancel()
 			state.Wg.Wait()
 			os.Exit(1)
+
+		case "disconnect":
+			fmt.Println("Disconnecting")
+			state.Cancel()
+			state.Wg.Wait()
 
 		case "startdt_act":
 			apdu = NewApdu()

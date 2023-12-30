@@ -305,7 +305,7 @@ func (state *State) timerRoutine() {
 
 		case <-state.tickers.t3ticker.C:
 			// fmt.Println("t3 TIMEOUT")
-			state.Chans.commandsFromStdin <- "testfr_act"
+			state.Chans.CommandsFromStdin <- "testfr_act"
 
 		case <-state.Ctx.Done():
 			fmt.Println("timerRoutine received Done(), returns")
