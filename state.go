@@ -9,16 +9,17 @@ import (
 )
 
 type State struct {
-	Config      Config
-	ConnState   ConnState
-	sendAck     ack
-	recvAck     ack
-	Chans       AllChans
-	Wg          sync.WaitGroup
-	Ctx         context.Context
-	Cancel      context.CancelFunc
-	dt_act_sent UFormat // for notification of state machine if a startdt_act or stopdt_act was sent
-	tickers     tickers
+	Config           Config
+	ConnState        ConnState
+	sendAck          ack
+	recvAck          ack
+	Chans            AllChans
+	Wg               sync.WaitGroup
+	Ctx              context.Context
+	Cancel           context.CancelFunc
+	dt_act_sent      UFormat // for notification of state machine if a startdt_act or stopdt_act was sent
+	manualDisconnect bool
+	tickers          tickers
 }
 type tickers struct {
 	t1ticker              *time.Ticker
@@ -74,13 +75,13 @@ func NewState() State {
 }
 
 func (state *State) Start() {
-
+	initLogger(state.Config)
+	printConfig(state.Config)
 	for {
-		if state.Config.InteractiveMode {
-			state.Chans.CommandsFromStdin = make(chan string, 30)
-			if state.Config.InteractiveMode {
-				go state.readCommandsFromStdIn() // never exits
-			}
+		if state.manualDisconnect {
+			// disconnect was done purposely, exit
+			state.manualDisconnect = false
+			return
 		}
 
 		state.Chans.Received = make(chan Apdu, state.Config.W)
@@ -89,6 +90,11 @@ func (state *State) Start() {
 
 		state.sendAck = newAck(state.Config.K)
 		state.recvAck = newAck(state.Config.K)
+
+		if state.Config.InteractiveMode {
+			state.Chans.CommandsFromStdin = make(chan string, 30)
+			go state.readCommandsFromStdIn() // never exits
+		}
 
 		// always start evaluateInteractiveCommands, we need it to control automatic sending, even if InteractiveMode is off
 		go state.evaluateInteractiveCommands()
@@ -125,7 +131,7 @@ func (state *State) connectionStateMachine() {
 		case apduReceived = <-state.Chans.Received:
 			if (apduReceived.Apci.FrameFormat != IFormatFrame) || apduReceived.Asdu.TypeId < INTERNAL_STATE_MACHINE_NOTIFIER {
 				// real apdu received, not an internal notification
-				fmt.Println("<<RX:", apduReceived)
+				logInfo.Println("<<RX:", apduReceived)
 				state.tickers.t3ticker.Reset(time.Duration(state.Config.T3) * time.Second)
 			}
 
@@ -150,20 +156,20 @@ func (state *State) connectionStateMachine() {
 						apduToSend.Apci.UFormat = StartDTCon
 						state.Chans.ToSend <- apduToSend
 						state.ConnState = STARTED
-						fmt.Println("Entering state STARTED")
+						logInfo.Println("Entering state STARTED")
 					}
 
 				}
 				if isClient && (state.dt_act_sent == StartDTAct) {
 					state.dt_act_sent = 0
 					state.ConnState = PENDING_STARTED
-					fmt.Println("Entering state PENDING_STARTED")
+					logInfo.Println("Entering state PENDING_STARTED")
 				}
 
 			case PENDING_STARTED:
 				if apduReceived.Apci.UFormat == StartDTCon {
 
-					fmt.Println("Entering state STARTED")
+					logInfo.Println("Entering state STARTED")
 					state.ConnState = STARTED
 
 				}
@@ -178,7 +184,7 @@ func (state *State) connectionStateMachine() {
 						apduToSend.Apci.UFormat = StopDTCon
 						state.Chans.ToSend <- apduToSend
 						state.ConnState = STOPPED
-						fmt.Println("Entering state STOPPED")
+						logInfo.Println("Entering state STOPPED")
 
 					}
 				}
@@ -190,21 +196,21 @@ func (state *State) connectionStateMachine() {
 						// state.ConnState = PENDING_UNCONFIRMED_STOPPED
 
 						state.ConnState = PENDING_STOPPED
-						fmt.Println("Entering state PENDING_STOPPED")
+						logInfo.Println("Entering state PENDING_STOPPED")
 					}
 				}
 			case PENDING_STOPPED:
 				if apduReceived.Apci.UFormat == StopDTCon {
 					// we have sent stopdt act as a client OR received Stopdt con (whichever comes first)
 					// bug: we could receive stopdt_con twice without having sent stopdt_act
-					fmt.Println("Entering state STOPPED")
+					logInfo.Println("Entering state STOPPED")
 					state.ConnState = STOPPED
 
 				}
 			}
 
 		case <-state.Ctx.Done():
-			fmt.Println("serverStateMachine received ctx.Done, returns")
+			logDebug.Println("serverStateMachine received ctx.Done, returns")
 			return
 		}
 	}
@@ -233,6 +239,11 @@ func newAck(length int) ack {
 
 // queueApdu adds i-formats to the ring, because they need to be ack'ed
 func (ack *ack) queueApdu(apdu Apdu) {
+	// check if received ssn is okay
+	if apdu.Apci.Ssn != ack.seqNumber {
+		logError.Println("Error received SSn does not match internal state, received ssn: ", apdu.Apci.Ssn, "state: ", ack.seqNumber)
+	}
+
 	ack.ring = ack.ring.Next()
 	ack.ring.Value = seqNumberAndTimetag{
 		seqNumber: apdu.Apci.Ssn,

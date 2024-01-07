@@ -18,6 +18,8 @@ type Config struct {
 	IoaStructured   bool   `json:"ioaStructured"`
 	InteractiveMode bool   `json:"interactiveMode"`
 	UseLocalTime    bool   `json:"useLocalTime"`
+	LogToBuffer     bool   `json:"logToBuffer"`
+	LogToStdOut     bool   `json:"logToStdOut"`
 }
 
 func (config *Config) ParseFlags() {
@@ -26,6 +28,9 @@ func (config *Config) ParseFlags() {
 	ipPtr := flag.String("h", "127.0.0.1", "IP address")
 	interactivePtr := flag.Bool("i", true, "Start in interactive mode, control program with cli commands")
 	portPtr := flag.Int("p", 2404, "Port")
+	logToBufferPtr := flag.Bool("b", false, "Log to buffer")
+	logToStdOutPtr := flag.Bool("l", true, "Log to standard output")
+
 	flag.Parse()
 
 	if *serverPtr {
@@ -37,6 +42,8 @@ func (config *Config) ParseFlags() {
 	config.Ipv4Addr = *ipPtr
 	config.InteractiveMode = *interactivePtr
 	config.Port = *portPtr
+	config.LogToBuffer = *logToBufferPtr
+	config.LogToStdOut = *logToStdOutPtr
 
 	// todo
 	config.K = 12
@@ -48,4 +55,9 @@ func (config *Config) ParseFlags() {
 	config.IoaStructured = false
 	config.UseLocalTime = false
 
+}
+
+func printConfig(config Config) {
+	logInfo.Println("============= Config =============")
+	logInfo.Printf("%+v\n", config)
 }

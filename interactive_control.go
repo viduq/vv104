@@ -2,13 +2,12 @@ package vv104
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 )
 
-func (state *State) readCommandsFromStdIn() {
-	fmt.Println("readCommandsFromStdIn started ******")
+func (state State) readCommandsFromStdIn() {
+	logDebug.Println("readCommandsFromStdIn started ******")
 	sc := bufio.NewScanner(os.Stdin)
 	state.Wg.Add(1)
 	defer state.Wg.Done()
@@ -19,7 +18,7 @@ func (state *State) readCommandsFromStdIn() {
 			state.Chans.CommandsFromStdin <- sc.Text()
 
 		case <-state.Ctx.Done():
-			fmt.Println("readCommandsFromStdIn received Done(), returns")
+			logDebug.Println("readCommandsFromStdIn received Done(), returns")
 			return
 
 		}
@@ -27,8 +26,8 @@ func (state *State) readCommandsFromStdIn() {
 }
 
 func (state *State) evaluateInteractiveCommands() {
-	fmt.Println("evaluateCommandsFromStdIn started")
-	defer fmt.Println("evaluateCommandsFromStdIn returned")
+	logDebug.Println("evaluateCommandsFromStdIn started")
+	defer logDebug.Println("evaluateCommandsFromStdIn returned")
 	state.Wg.Add(1)
 	defer state.Wg.Done()
 
@@ -37,10 +36,10 @@ func (state *State) evaluateInteractiveCommands() {
 
 		case input := <-state.Chans.CommandsFromStdin:
 			inputSplit := strings.Split(input, " ")
-			go state.evaluateInputSplit(inputSplit)
+			state.evaluateInputSplit(inputSplit)
 
 		case <-state.Ctx.Done():
-			fmt.Println("evaluateCommandsFromStdIn received Done(), returns")
+			logDebug.Println("evaluateCommandsFromStdIn received Done(), returns")
 			return
 		}
 	}
@@ -52,17 +51,18 @@ func (state *State) evaluateInputSplit(inputSplit []string) {
 	case inputArgsCount == 1:
 		switch inputSplit[0] {
 		case "restart":
-			fmt.Println("called restart")
+			logInfo.Println("called restart")
 			state.Cancel()
 
 		case "exit":
-			fmt.Println("Exiting")
+			logInfo.Println("Exiting")
 			state.Cancel()
 			state.Wg.Wait()
 			os.Exit(1)
 
 		case "disconnect":
-			fmt.Println("Disconnecting")
+			logInfo.Println("Disconnecting")
+			state.manualDisconnect = true
 			state.Cancel()
 			state.Wg.Wait()
 
