@@ -88,78 +88,85 @@ func NewApdu() Apdu {
 	return apdu
 }
 
-func ParseApdu(buf *bytes.Buffer) (Apdu, error) {
+func ParseApdu(buf *bytes.Buffer) ([]Apdu, error) {
 	var b byte
 	var b1 byte
 	var b2 byte
 	// var err error
-	apdu := NewApdu()
+	var allApdus []Apdu
+	// fmt.Println("len", buf.Len())
 
-	if buf.Len() < 6 {
-		return apdu, errors.New("buffer < 6 bytes, can't parse")
-	}
-	if buf.Len() > 253 { // todo check if 255?
-		// hier müssen wahrscheinlich mehrere frames ausgewertet werden
-		// todo
-	}
+	for buf.Len() >= 6 {
+		apdu := NewApdu()
 
-	b, _ = buf.ReadByte()
-	if b != STARTBYTE {
-		return apdu, errors.New("startbyte is not first byte, todo")
-	}
-
-	b, _ = buf.ReadByte()
-	if (uint8(b) > 253) || (uint8(b) < 4) {
-		return apdu, errors.New("apdu len is not within range")
-	}
-	apdu.Apci.length = uint8(b)
-
-	// ctrl field 1
-	b, _ = buf.ReadByte()
-	if (b & 0b0000_0001) == 0b0000_0000 {
-		// i frame
-		apdu.Apci.FrameFormat = IFormatFrame
-		b1 = b
-		b2, _ = buf.ReadByte()
-		apdu.Apci.Ssn = SeqNumber((uint16(b1) >> 1) + (uint16(b2) << 7))
-
-		b1, _ = buf.ReadByte()
-		b2, _ = buf.ReadByte()
-		apdu.Apci.Rsn = SeqNumber((uint16(b1) >> 1) + (uint16(b2) << 7))
-
-		apdu.Asdu, _ = parseAsdu(buf)
-
-	} else if (b & 0b0000_0011) == 0b0000_0001 {
-		// s frame
-		apdu.Apci.FrameFormat = SFormatFrame
-		//ctrl field 2
-		_, _ = buf.ReadByte() // empty byte
-		//ctrl field 3
-		b1, _ = buf.ReadByte()
-		//ctrl field 4
-		b2, _ = buf.ReadByte()
-
-		apdu.Apci.Rsn = SeqNumber((uint16(b1) >> 1) + (uint16(b2) << 7))
-
-	} else if (b & 0b0000_0011) == 0b0000_0011 {
-		// u frame
-		apdu.Apci.FrameFormat = UFormatFrame
-
-		if b&byte(StartDTAct) == byte(StartDTAct) {
-			apdu.Apci.UFormat = StartDTAct
-		} else if b&byte(StartDTCon) == byte(StartDTCon) {
-			apdu.Apci.UFormat = StartDTCon
-		} else if b&byte(StopDTAct) == byte(StopDTAct) {
-			apdu.Apci.UFormat = StopDTAct
-		} else if b&byte(StopDTCon) == byte(StopDTCon) {
-			apdu.Apci.UFormat = StopDTCon
-		} else if b&byte(TestFRAct) == byte(TestFRAct) {
-			apdu.Apci.UFormat = TestFRAct
-		} else if b&byte(TestFRCon) == byte(TestFRCon) {
-			apdu.Apci.UFormat = TestFRCon
+		if buf.Len() < 6 {
+			return allApdus, errors.New("buffer < 6 bytes, can't parse")
+		}
+		if buf.Len() > 253 { // todo check if 255?
+			// hier müssen wahrscheinlich mehrere frames ausgewertet werden
+			// todo
 		}
 
+		b, _ = buf.ReadByte()
+		if b != STARTBYTE {
+			return allApdus, errors.New("startbyte is not first byte, todo")
+		}
+
+		b, _ = buf.ReadByte()
+		if (uint8(b) > 253) || (uint8(b) < 4) {
+			return allApdus, errors.New("apdu len is not within range")
+		}
+		apdu.Apci.length = uint8(b)
+
+		// ctrl field 1
+		b, _ = buf.ReadByte()
+		if (b & 0b0000_0001) == 0b0000_0000 {
+			// i frame
+			apdu.Apci.FrameFormat = IFormatFrame
+			b1 = b
+			b2, _ = buf.ReadByte()
+			apdu.Apci.Ssn = SeqNumber((uint16(b1) >> 1) + (uint16(b2) << 7))
+
+			b1, _ = buf.ReadByte()
+			b2, _ = buf.ReadByte()
+			apdu.Apci.Rsn = SeqNumber((uint16(b1) >> 1) + (uint16(b2) << 7))
+
+			apdu.Asdu, _ = parseAsdu(buf)
+
+		} else if (b & 0b0000_0011) == 0b0000_0001 {
+			// s frame
+			apdu.Apci.FrameFormat = SFormatFrame
+			//ctrl field 2
+			_, _ = buf.ReadByte() // empty byte
+			//ctrl field 3
+			b1, _ = buf.ReadByte()
+			//ctrl field 4
+			b2, _ = buf.ReadByte()
+
+			apdu.Apci.Rsn = SeqNumber((uint16(b1) >> 1) + (uint16(b2) << 7))
+
+		} else if (b & 0b0000_0011) == 0b0000_0011 {
+			// u frame
+			apdu.Apci.FrameFormat = UFormatFrame
+
+			if b&byte(StartDTAct) == byte(StartDTAct) {
+				apdu.Apci.UFormat = StartDTAct
+			} else if b&byte(StartDTCon) == byte(StartDTCon) {
+				apdu.Apci.UFormat = StartDTCon
+			} else if b&byte(StopDTAct) == byte(StopDTAct) {
+				apdu.Apci.UFormat = StopDTAct
+			} else if b&byte(StopDTCon) == byte(StopDTCon) {
+				apdu.Apci.UFormat = StopDTCon
+			} else if b&byte(TestFRAct) == byte(TestFRAct) {
+				apdu.Apci.UFormat = TestFRAct
+			} else if b&byte(TestFRCon) == byte(TestFRCon) {
+				apdu.Apci.UFormat = TestFRCon
+			}
+
+		}
+
+		allApdus = append(allApdus, apdu)
 	}
 
-	return apdu, nil
+	return allApdus, nil
 }
