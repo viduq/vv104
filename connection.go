@@ -60,16 +60,19 @@ func (state *State) startServer() {
 				continue
 			}
 			logInfo.Println("Connected from: ", conn.RemoteAddr())
+			state.TcpConnected = true
 			go state.receivingRoutine(conn)
 			go state.sendingRoutine(conn)
 			go state.connectionStateMachine()
 			go state.timerRoutine()
 
 			<-state.Ctx.Done() // todo? other criteria?
+			state.TcpConnected = false
 			return
 
 		case <-state.Ctx.Done():
 			logDebug.Println("startServer received Done(), returns")
+			state.TcpConnected = false
 			return
 		}
 	}
@@ -102,16 +105,21 @@ func (state *State) startClient() {
 				continue
 			}
 			logInfo.Println("Connected to:", conn.RemoteAddr())
+			state.TcpConnected = true
 			go state.receivingRoutine(conn)
 			go state.sendingRoutine(conn)
 			go state.connectionStateMachine()
 			go state.timerRoutine()
 
 			<-state.Ctx.Done() // todo? other criteria?
+			state.TcpConnected = false
+
 			return
 
 		case <-state.Ctx.Done():
 			logDebug.Println("startClient received Done(), returns")
+			state.TcpConnected = false
+
 			return
 		}
 	}

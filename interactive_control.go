@@ -64,7 +64,6 @@ func (state *State) evaluateInputSplit(inputSplit []string) {
 			logInfo.Println("Disconnecting")
 			state.manualDisconnect = true
 			state.Cancel()
-			state.Wg.Wait()
 
 		case "startdt_act":
 			apdu = NewApdu()

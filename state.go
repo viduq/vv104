@@ -3,7 +3,6 @@ package vv104
 import (
 	"container/ring"
 	"context"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -19,6 +18,8 @@ type State struct {
 	Cancel           context.CancelFunc
 	dt_act_sent      UFormat // for notification of state machine if a startdt_act or stopdt_act was sent
 	manualDisconnect bool
+	Running          bool // true when trying to connect/waiting for connection
+	TcpConnected     bool
 	tickers          tickers
 }
 type tickers struct {
@@ -75,14 +76,12 @@ func NewState() State {
 }
 
 func (state *State) Start() {
+
 	initLogger(state.Config)
 	printConfig(state.Config)
-	for {
-		if state.manualDisconnect {
-			// disconnect was done purposely, exit
-			state.manualDisconnect = false
-			return
-		}
+	state.Running = true
+
+	for !state.manualDisconnect {
 
 		state.Chans.Received = make(chan Apdu, state.Config.W)
 		state.Chans.ToSend = make(chan Apdu, state.Config.K)
@@ -93,7 +92,7 @@ func (state *State) Start() {
 
 		if state.Config.InteractiveMode {
 			state.Chans.CommandsFromStdin = make(chan string, 30)
-			go state.readCommandsFromStdIn() // never exits
+			go state.readCommandsFromStdIn()
 		}
 
 		// always start evaluateInteractiveCommands, we need it to control automatic sending, even if InteractiveMode is off
@@ -102,9 +101,16 @@ func (state *State) Start() {
 
 		<-state.Ctx.Done()
 		state.Wg.Wait()
-		// fmt.Println("Restart!")
+		if !state.manualDisconnect {
+			logInfo.Println("Restart!")
+
+		}
 		time.Sleep(1500 * time.Millisecond)
 	}
+	defer logDebug.Println("Start() returned")
+	// disconnect was done purposely, exit
+	state.manualDisconnect = false
+	state.Running = false
 }
 
 func (state *State) connectionStateMachine() {
@@ -117,7 +123,7 @@ func (state *State) connectionStateMachine() {
 	defer state.Wg.Done()
 
 	state.ConnState = STOPPED
-	fmt.Println("Entering state STOPPED")
+	logInfo.Println("Entering state STOPPED")
 
 	if isClient {
 		// we need to trigger stardt_act here, it will trigger a notification for the blocking received channel, to jump over it
