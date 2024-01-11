@@ -1,9 +1,13 @@
 package vv104
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type Objects struct {
 	sync.RWMutex
+	ObjectsList []string
 	MoniObjects ObjectsMap
 	CtrlObjects ObjectsMap
 }
@@ -13,10 +17,12 @@ type ObjectsMap map[string]Asdu
 func NewObjects() *Objects {
 	return &Objects{
 		RWMutex:     sync.RWMutex{},
+		ObjectsList: []string{},
 		MoniObjects: map[string]Asdu{},
 		CtrlObjects: map[string]Asdu{},
 	}
 }
+
 func (objects *Objects) AddObject(objectName string, asdu Asdu) error {
 	objects.RWMutex.Lock()
 	defer objects.RWMutex.Unlock()
@@ -32,5 +38,21 @@ func (objects *Objects) AddObject(objectName string, asdu Asdu) error {
 
 	}
 
+	objects.ObjectsList = append(objects.ObjectsList, objectName)
+
 	return nil
+}
+
+func (objects Objects) PrintObjects() {
+	fmt.Println("============= Control Objects =============")
+
+	for objName, asdu := range objects.CtrlObjects {
+		fmt.Println(objName, asdu.String())
+	}
+
+	fmt.Println("============= Monitoring Objects =============")
+
+	for objName, asdu := range objects.MoniObjects {
+		fmt.Println(objName, asdu.String())
+	}
 }

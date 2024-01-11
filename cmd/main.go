@@ -25,7 +25,28 @@ func main() {
 	asdu.Casdu = 1
 	asdu.TypeId = vv104.M_DP_NA_1
 	asdu.InfoObj = infoObjects
-	objects.AddObject("dp", *asdu)
+	objects.AddObject("dp1", *asdu)
+
+	infoObject.Ioa = 101
+
+	objects.AddObject("dp2", *asdu)
+	infoObject.Ioa = 102
+	objects.AddObject("dp3", *asdu)
+	infoObject.Ioa = 103
+	objects.AddObject("dp4", *asdu)
+
+	asdu = vv104.NewAsdu()
+
+	infoObjects = nil
+	infoObject.Ioa = 10
+	infoObject.Value = vv104.IntVal(0)
+	infoObjects = append(infoObjects, infoObject)
+	asdu.Casdu = 1
+	asdu.TypeId = vv104.C_SC_NA_1
+	asdu.InfoObj = infoObjects
+	objects.AddObject("sc1", *asdu)
+
+	objects.PrintObjects()
 
 	// go sendAFrame(&state)
 	state.Start()

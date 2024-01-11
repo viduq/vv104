@@ -29,6 +29,42 @@ const (
 	TestFRCon  UFormat = 0x83
 )
 
+var (
+	TypeIDs []string = []string{
+		M_SP_NA_1.String(),
+		M_DP_NA_1.String(),
+		M_ST_NA_1.String(),
+		M_BO_NA_1.String(),
+		M_ME_NA_1.String(),
+		M_ME_NB_1.String(),
+		M_ME_NC_1.String(),
+		M_IT_NA_1.String(),
+		M_SP_TB_1.String(),
+		M_DP_TB_1.String(),
+		M_ST_TB_1.String(),
+		M_BO_TB_1.String(),
+		M_ME_TD_1.String(),
+		M_ME_TE_1.String(),
+		M_ME_TF_1.String(),
+		M_IT_TB_1.String(),
+		C_SC_NA_1.String(),
+		C_DC_NA_1.String(),
+		C_RC_NA_1.String(),
+		C_SE_NA_1.String(),
+		C_SE_NB_1.String(),
+		C_SE_NC_1.String(),
+		C_BO_NA_1.String(),
+		C_SC_TA_1.String(),
+		C_DC_TA_1.String(),
+		C_RC_TA_1.String(),
+		C_SE_TA_1.String(),
+		C_SE_TB_1.String(),
+		C_SE_TC_1.String(),
+		C_BO_TA_1.String(),
+		M_EI_NA_1.String(),
+	}
+)
+
 // Type IDs
 //
 //go:generate stringer -type=TypeId
