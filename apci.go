@@ -7,7 +7,7 @@ import (
 // Apci header of the iec 104 frame
 
 const (
-	STARTBYTE byte = 0x68
+	startbyte byte = 0x68
 )
 
 type SeqNumber int
@@ -21,7 +21,7 @@ type Apci struct {
 }
 
 func (apci *Apci) serialize(state State, buf *bytes.Buffer, asduLength uint8) {
-	buf.WriteByte(STARTBYTE)
+	buf.WriteByte(startbyte)
 	apci.length = asduLength + 4
 	buf.WriteByte(byte(apci.length)) // todo check for overfow
 	apci.Ssn = state.sendAck.seqNumber

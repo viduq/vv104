@@ -93,14 +93,14 @@ func (i IntVal) String() string {
 }
 
 const (
-	Bit1 byte = 1 << iota
-	Bit2
-	Bit3
-	Bit4
-	Bit5
-	Bit6
-	Bit7
-	Bit8
+	bit1 byte = 1 << iota
+	bit2
+	bit3
+	bit4
+	bit5
+	bit6
+	bit7
+	bit8
 )
 
 func setBit(b, flag byte) byte    { return b | flag }
@@ -250,24 +250,24 @@ func (infoObj InfoObj) writeInfo(typeId TypeId, buf *bytes.Buffer) error {
 func (infoObj InfoObj) writeSiqDiq(b byte, buf *bytes.Buffer) {
 
 	if infoObj.Quality.Bl {
-		b = setBit(b, Bit5)
+		b = setBit(b, bit5)
 	} else {
-		b = clearBit(b, Bit5)
+		b = clearBit(b, bit5)
 	}
 	if infoObj.Quality.Sb {
-		b = setBit(b, Bit6)
+		b = setBit(b, bit6)
 	} else {
-		b = clearBit(b, Bit6)
+		b = clearBit(b, bit6)
 	}
 	if infoObj.Quality.Nt {
-		b = setBit(b, Bit7)
+		b = setBit(b, bit7)
 	} else {
-		b = clearBit(b, Bit7)
+		b = clearBit(b, bit7)
 	}
 	if infoObj.Quality.Iv {
-		b = setBit(b, Bit8)
+		b = setBit(b, bit8)
 	} else {
-		b = clearBit(b, Bit8)
+		b = clearBit(b, bit8)
 	}
 
 	buf.WriteByte(b)
@@ -277,9 +277,9 @@ func (infoObj InfoObj) writeSiqDiq(b byte, buf *bytes.Buffer) {
 // Value and CommandInfo for commands
 func (infoObj InfoObj) writeCommandInfo(b byte, buf *bytes.Buffer) {
 	if infoObj.CommandInfo.Quoc.Select {
-		b = setBit(b, Bit8)
+		b = setBit(b, bit8)
 	} else {
-		b = clearBit(b, Bit8)
+		b = clearBit(b, bit8)
 	}
 	b |= (byte(infoObj.CommandInfo.Quoc.Qu) << 2)
 	buf.WriteByte(b)
@@ -289,30 +289,30 @@ func (infoObj InfoObj) writeQualitySeparateOctet(buf *bytes.Buffer) {
 	var b byte
 
 	if infoObj.Quality.Ov {
-		b = setBit(b, Bit1)
+		b = setBit(b, bit1)
 	} else {
-		b = clearBit(b, Bit1)
+		b = clearBit(b, bit1)
 	}
 	// bits 2..4 reserve
 	if infoObj.Quality.Bl {
-		b = setBit(b, Bit5)
+		b = setBit(b, bit5)
 	} else {
-		b = clearBit(b, Bit5)
+		b = clearBit(b, bit5)
 	}
 	if infoObj.Quality.Sb {
-		b = setBit(b, Bit6)
+		b = setBit(b, bit6)
 	} else {
-		b = clearBit(b, Bit6)
+		b = clearBit(b, bit6)
 	}
 	if infoObj.Quality.Nt {
-		b = setBit(b, Bit7)
+		b = setBit(b, bit7)
 	} else {
-		b = clearBit(b, Bit7)
+		b = clearBit(b, bit7)
 	}
 	if infoObj.Quality.Iv {
-		b = setBit(b, Bit8)
+		b = setBit(b, bit8)
 	} else {
-		b = clearBit(b, Bit8)
+		b = clearBit(b, bit8)
 	}
 
 	buf.WriteByte(b)
@@ -353,24 +353,24 @@ func (asdu Asdu) serialize(state State, buf *bytes.Buffer) {
 	buf.WriteByte(byte(asdu.TypeId))
 
 	if asdu.Sequence {
-		x = setBit(x, Bit8)
+		x = setBit(x, bit8)
 	} else {
-		x = clearBit(x, Bit8)
+		x = clearBit(x, bit8)
 	}
 	x |= byte(asdu.Num)
 	buf.WriteByte(x)
 
 	x = 0
 	if asdu.Test {
-		x = setBit(x, Bit8)
+		x = setBit(x, bit8)
 	} else {
-		x = clearBit(x, Bit8)
+		x = clearBit(x, bit8)
 	}
 
 	if asdu.Negative {
-		x = setBit(x, Bit7)
+		x = setBit(x, bit7)
 	} else {
-		x = clearBit(x, Bit7)
+		x = clearBit(x, bit7)
 	}
 
 	x |= byte(asdu.CauseTx)
@@ -411,11 +411,11 @@ func (infoObj InfoObj) serializeTime(state State, buf *bytes.Buffer) {
 	var weekDay int
 
 	if iv {
-		ivMask = setBit(ivMask, Bit8)
+		ivMask = setBit(ivMask, bit8)
 	}
 
 	if su {
-		suMask = setBit(suMask, Bit8)
+		suMask = setBit(suMask, bit8)
 	}
 
 	if !infoObj.TimeTag.IsZero() {
@@ -457,7 +457,7 @@ func parseAsdu(buf *bytes.Buffer) (Asdu, error) {
 	// variable structure verifier
 	b, _ = buf.ReadByte()
 
-	asdu.Sequence = hasBit(b, Bit8)
+	asdu.Sequence = hasBit(b, bit8)
 	asdu.Num = Num(b & 0b0111_1111)
 
 	// cot
@@ -570,22 +570,22 @@ func (infoObj *InfoObj) parseQds(typeid TypeId, buf *bytes.Buffer) byte {
 
 	quality := &infoObj.Quality
 
-	if hasBit(b, Bit8) {
+	if hasBit(b, bit8) {
 		quality.Iv = true
 	} else {
 		quality.Iv = false
 	}
-	if hasBit(b, Bit7) {
+	if hasBit(b, bit7) {
 		quality.Nt = true
 	} else {
 		quality.Nt = false
 	}
-	if hasBit(b, Bit6) {
+	if hasBit(b, bit6) {
 		quality.Sb = true
 	} else {
 		quality.Sb = false
 	}
-	if hasBit(b, Bit5) {
+	if hasBit(b, bit5) {
 		quality.Bl = true
 	} else {
 		quality.Bl = false
@@ -595,7 +595,7 @@ func (infoObj *InfoObj) parseQds(typeid TypeId, buf *bytes.Buffer) byte {
 	case M_ME_NA_1, M_ME_TD_1, M_ME_NB_1, M_ME_TE_1, M_ME_NC_1, M_ME_TF_1:
 		// all MV values have also OV flag
 
-		if hasBit(b, Bit1) {
+		if hasBit(b, bit1) {
 			quality.Ov = true
 		} else {
 			quality.Ov = false
@@ -608,7 +608,7 @@ func (infoObj *InfoObj) parseQds(typeid TypeId, buf *bytes.Buffer) byte {
 func (infoObj *InfoObj) parseScoDco(typeId TypeId, buf *bytes.Buffer) {
 	b, _ := buf.ReadByte()
 
-	infoObj.CommandInfo.Quoc.Select = hasBit(b, Bit8)
+	infoObj.CommandInfo.Quoc.Select = hasBit(b, bit8)
 
 	switch typeId {
 	case C_SC_NA_1, C_SC_TA_1:

@@ -108,7 +108,7 @@ func ParseApdu(buf *bytes.Buffer) ([]Apdu, error) {
 		}
 
 		b, _ = buf.ReadByte()
-		if b != STARTBYTE {
+		if b != startbyte {
 			return allApdus, errors.New("startbyte is not first byte, todo")
 		}
 
