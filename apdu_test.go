@@ -25,7 +25,7 @@ func TestVariousFrames(t *testing.T) {
 	infoObj.Ioa = 1235
 	infoObj.Value = IntVal(32767)
 	infoObj.TimeTag = time.Date(2023, 11, 1, 19, 44, 57, 23000000, time.Local)
-	m_me_td_1.Asdu.addInfoObject(infoObj)
+	m_me_td_1.Asdu.AddInfoObject(infoObj)
 	m_me_td_1.Apci.length = 23
 
 	gi_act := NewApdu()
@@ -38,7 +38,7 @@ func TestVariousFrames(t *testing.T) {
 	infoObj.Ioa = 0
 	infoObj.CommandInfo.Qoi = statioInterrogation
 	infoObj.Value = IntVal(0)
-	gi_act.Asdu.addInfoObject(infoObj)
+	gi_act.Asdu.AddInfoObject(infoObj)
 	gi_act.Apci.length = 14
 
 	sc_act := NewApdu()
@@ -50,7 +50,7 @@ func TestVariousFrames(t *testing.T) {
 	infoObj = newInfoObj()
 	infoObj.Ioa = 4500
 	infoObj.Value = IntVal(1)
-	sc_act.Asdu.addInfoObject(infoObj)
+	sc_act.Asdu.AddInfoObject(infoObj)
 	sc_act.Apci.length = 14
 
 	startDtAct := NewApdu()
@@ -94,67 +94,67 @@ func TestVariousFrames(t *testing.T) {
 	infoObj = InfoObj{}
 	infoObj.Ioa = 35
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 70000
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 70001
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 70005
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 70002
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 70004
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 123
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 124
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 16000000
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 126
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 127
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 1000000
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 70003
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 30
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 128
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	infoObj = InfoObj{}
 	infoObj.Ioa = 125
 	infoObj.Value = IntVal(0)
-	m_dp_na_1_16x.Asdu.addInfoObject(infoObj)
+	m_dp_na_1_16x.Asdu.AddInfoObject(infoObj)
 	m_dp_na_1_16x.Apci.length = 74
 
 	// test table adjusted from here: https://blog.jetbrains.com/go/2022/11/22/comprehensive-guide-to-testing-in-go/

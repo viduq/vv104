@@ -30,14 +30,13 @@ func addLogEntry(s string) {
 
 // API to read from logs (concurrently?)
 func ReadLogEntry() string {
-	if len(logStrings) > 0 {
-		s := logStrings[0]
+	var s string = ""
+	for _, logString := range logStrings {
+		s += logString
 		logStrings = logStrings[1:]
-		return s
 
-	} else {
-		return ""
 	}
+	return s
 }
 
 func (vvlog vv104logger) Write(p []byte) (n int, err error) {

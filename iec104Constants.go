@@ -64,6 +64,51 @@ var (
 		C_BO_TA_1.String(),
 		M_EI_NA_1.String(),
 	}
+
+	CauseTxs []string = []string{
+		Per_Cyc.String(),
+		Back.String(),
+		Spont.String(),
+		Init.String(),
+		Req.String(),
+		Act.String(),
+		ActCon.String(),
+		Deact.String(),
+		DeactCon.String(),
+		ActTerm.String(),
+		Retrem.String(),
+		Retloc.String(),
+		// File.String(),
+		Inrogen.String(),
+		Inro1.String(),
+		// Inro2.String(),
+		// Inro3.String(),
+
+		// keep short for GUI
+
+		// Inro4.String(),
+		// Inro5.String(),
+		// Inro6.String(),
+		// Inro7.String(),
+		// Inro8.String(),
+		// Inro9.String(),
+		// Inro10.String(),
+		// Inro11.String(),
+		// Inro12.String(),
+		// Inro13.String(),
+		// Inro14.String(),
+		// Inro15.String(),
+		// Inro16.String(),
+		Reqcogen.String(),
+		Reqco1.String(),
+		// Reqco2.String(),
+		// Reqco3.String(),
+		// Reqco4.String(),
+		UkTypeId.String(),
+		UkCauseTx.String(),
+		UkComAdrASDU.String(),
+		UkIOA.String(),
+	}
 )
 
 // Type IDs
@@ -193,6 +238,92 @@ func TypeIdFromName(id string) TypeId {
 
 	}
 	return TypeId(0)
+}
+
+func CauseTxFromName(cot string) CauseTx {
+	switch cot {
+	case "Per_Cyc":
+		return CauseTx(Per_Cyc)
+	case "Back":
+		return CauseTx(Back)
+	case "Spont":
+		return CauseTx(Spont)
+	case "Init":
+		return CauseTx(Init)
+	case "Req":
+		return CauseTx(Req)
+	case "Act":
+		return CauseTx(Act)
+	case "ActCon":
+		return CauseTx(ActCon)
+	case "Deact":
+		return CauseTx(Deact)
+	case "DeactCon":
+		return CauseTx(DeactCon)
+	case "ActTerm":
+		return CauseTx(ActTerm)
+	case "Retrem":
+		return CauseTx(Retrem)
+	case "Retloc":
+		return CauseTx(Retloc)
+	case "File":
+		return CauseTx(File)
+	case "Inrogen":
+		return CauseTx(Inrogen)
+	case "Inro1":
+		return CauseTx(Inro1)
+	case "Inro2":
+		return CauseTx(Inro2)
+	case "Inro3":
+		return CauseTx(Inro3)
+	case "Inro4":
+		return CauseTx(Inro4)
+	case "Inro5":
+		return CauseTx(Inro5)
+	case "Inro6":
+		return CauseTx(Inro6)
+	case "Inro7":
+		return CauseTx(Inro7)
+	case "Inro8":
+		return CauseTx(Inro8)
+	case "Inro9":
+		return CauseTx(Inro9)
+	case "Inro10":
+		return CauseTx(Inro10)
+	case "Inro11":
+		return CauseTx(Inro11)
+	case "Inro12":
+		return CauseTx(Inro12)
+	case "Inro13":
+		return CauseTx(Inro13)
+	case "Inro14":
+		return CauseTx(Inro14)
+	case "Inro15":
+		return CauseTx(Inro15)
+	case "Inro16":
+		return CauseTx(Inro16)
+	case "Reqcogen":
+		return CauseTx(Reqcogen)
+	case "Reqco1":
+		return CauseTx(Reqco1)
+	case "Reqco2":
+		return CauseTx(Reqco2)
+	case "Reqco3":
+		return CauseTx(Reqco3)
+	case "Reqco4":
+		return CauseTx(Reqco4)
+	case "UkTypeId":
+		return CauseTx(UkTypeId)
+	case "UkCauseTx":
+		return CauseTx(UkCauseTx)
+	case "UkComAdrASDU":
+		return CauseTx(UkComAdrASDU)
+	case "UkIOA":
+		return CauseTx(UkIOA)
+
+	}
+
+	return CauseTx(0)
 }
 
 // Cause of Transmission

@@ -265,7 +265,7 @@ func (state *State) sendingRoutine(conn net.Conn) {
 
 				if state.sendAck.openFrames == 1 {
 					// was 0 before, new open frame
-					state.tickers.t2tickerSentItems.Reset(time.Duration(state.Config.T2) * time.Second)
+					state.tickers.t2tickerSentItems.Reset(time.Duration(state.Config.T2+1) * time.Second)
 				}
 
 			}
@@ -286,7 +286,7 @@ func (state *State) timerRoutine() {
 	state.tickers.t1ticker = time.NewTicker(time.Duration(state.Config.T1) * time.Second)
 	state.tickers.t2tickerReceivedItems = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
 	state.tickers.t2tickerReceivedItems.Stop()
-	state.tickers.t2tickerSentItems = time.NewTicker(time.Duration(state.Config.T2) * time.Second)
+	state.tickers.t2tickerSentItems = time.NewTicker(time.Duration(state.Config.T2+1) * time.Second)
 	state.tickers.t2tickerSentItems.Stop()
 	state.tickers.t3ticker = time.NewTicker(time.Duration(state.Config.T3-4) * time.Second)
 

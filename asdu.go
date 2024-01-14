@@ -37,7 +37,8 @@ func NewAsdu() *Asdu {
 	return &asdu
 }
 
-func (asdu *Asdu) addInfoObject(infoObj InfoObj) error {
+// an ASDU can contain multiple InfoObjects, append them using this function
+func (asdu *Asdu) AddInfoObject(infoObj InfoObj) error {
 	asdu.InfoObj = append(asdu.InfoObj, infoObj)
 
 	asdu.Num = Num(len(asdu.InfoObj))

@@ -110,7 +110,7 @@ func (state *State) evaluateInputSplit(inputSplit []string) {
 			sp.Asdu.TypeId = M_SP_NA_1
 			sp.Asdu.CauseTx = Spont
 			sp.Asdu.Casdu = 1
-			sp.Asdu.addInfoObject(infoObj)
+			sp.Asdu.AddInfoObject(infoObj)
 
 			state.Chans.ToSend <- sp
 		}
