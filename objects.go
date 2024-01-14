@@ -10,17 +10,20 @@ import (
 
 type Objects struct {
 	sync.RWMutex
-	ObjectsList []string
+	// lists are mainly for GUI use
+	MoniList ObjectList
+	CtrlList ObjectList
+	// maps keep obj Names and refer to Asdu objects
 	MoniObjects ObjectsMap
 	CtrlObjects ObjectsMap
 }
-
+type ObjectList []string
 type ObjectsMap map[string]Asdu
 
 func NewObjects() *Objects {
 	return &Objects{
 		RWMutex:     sync.RWMutex{},
-		ObjectsList: []string{},
+		MoniList:    []string{},
 		MoniObjects: map[string]Asdu{},
 		CtrlObjects: map[string]Asdu{},
 	}
@@ -30,27 +33,35 @@ func (objects *Objects) AddObject(objectName string, asdu Asdu) error {
 	if objectName == "" {
 		return errors.New("obj name cant be empty string")
 	}
-	if objects.ObjectExists(objectName, int(asdu.InfoObj[0].Ioa), int(asdu.TypeId)) {
-		return errors.New("obj already exists")
-	}
 
 	objects.RWMutex.Lock()
 	defer objects.RWMutex.Unlock()
 
-	switch typeId := asdu.TypeId; {
-	case typeId < 45:
+	if isMonitoringObject(int(asdu.TypeId)) {
 		// monitoring direction
+		if objects.MoniObjects.ObjectExists(objectName, int(asdu.InfoObj[0].Ioa), int(asdu.TypeId)) {
+			return errors.New("moni object already exists")
+		}
 		objects.MoniObjects[objectName] = asdu
-
-	case typeId >= 45 && typeId < 70:
+		objects.MoniList = append(objects.MoniList, describeObject(objectName, asdu))
+	} else if isControlObject(int(asdu.TypeId)) {
 		// control direction
+		if objects.CtrlObjects.ObjectExists(objectName, int(asdu.InfoObj[0].Ioa), int(asdu.TypeId)) {
+			return errors.New("ctrl object already exists")
+		}
 		objects.CtrlObjects[objectName] = asdu
-
+		objects.CtrlList = append(objects.CtrlList, describeObject(objectName, asdu))
 	}
 
-	objects.ObjectsList = append(objects.ObjectsList, describeObject(objectName, asdu))
-
 	return nil
+}
+
+func isMonitoringObject(typeId int) bool {
+	return typeId < 45
+}
+
+func isControlObject(typeId int) bool {
+	return typeId >= 45 && typeId < 70
 }
 
 func describeObject(objectName string, asdu Asdu) string {
@@ -64,25 +75,31 @@ func (objects *Objects) RemoveObject(objectName string) error {
 
 	if objects.MoniObjects.ObjectExists(objectName, 0, 0) {
 		delete(objects.MoniObjects, objectName)
+		index, err := objects.MoniList.FindObjectInList(objectName)
+		if err != nil {
+			// fmt.Println(objects.MoniObjects)
+			return errors.New("obj does not exist in object List, cant be removed there")
+		}
+		objects.MoniList = slices.Delete(objects.MoniList, index, index+1)
 	} else if objects.CtrlObjects.ObjectExists(objectName, 0, 0) {
 		delete(objects.CtrlObjects, objectName)
+		index, err := objects.CtrlList.FindObjectInList(objectName)
+		if err != nil {
+			// fmt.Println(objects.MoniObjects)
+			return errors.New("obj does not exist in object List, cant be removed there")
+		}
+		objects.CtrlList = slices.Delete(objects.CtrlList, index, index+1)
+
 	} else {
 		return errors.New("not found in map, can't remove")
 	}
 
-	index, err := objects.FindObjectInList(objectName)
-	if err != nil {
-		// fmt.Println(objects.MoniObjects)
-		return errors.New("obj does not exist in object List, cant be removed there")
-	}
-	objects.ObjectsList = slices.Delete(objects.ObjectsList, index, index+1)
-
 	return nil
 }
 
-func (objects Objects) FindObjectInList(objName string) (int, error) {
+func (objectList ObjectList) FindObjectInList(objName string) (int, error) {
 
-	for i, name := range objects.ObjectsList {
+	for i, name := range objectList {
 		// ObjectsList contains full description with TypeID | IOA .. therefore we need to split
 		if objName == strings.Split(name, " ")[0] {
 			return i, nil
@@ -114,10 +131,10 @@ func (objectsMap ObjectsMap) ObjectExists(objName string, ioa int, typeId int) b
 	return false
 }
 
-func (objects Objects) ObjectExists(objName string, ioa int, typeId int) bool {
-	return objects.MoniObjects.ObjectExists(objName, ioa, typeId) || objects.CtrlObjects.ObjectExists(objName, ioa, typeId)
+// func (objects Objects) ObjectExists(objName string, ioa int, typeId int) bool {
+// 	return objects.MoniObjects.ObjectExists(objName, ioa, typeId) || objects.CtrlObjects.ObjectExists(objName, ioa, typeId)
 
-}
+// }
 
 func (objects Objects) PrintObjects() {
 	fmt.Println("============= Control Objects =============")

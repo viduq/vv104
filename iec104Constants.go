@@ -29,6 +29,7 @@ const (
 	TestFRCon  UFormat = 0x83
 )
 
+// for GUI
 var (
 	TypeIDs []string = []string{
 		M_SP_NA_1.String(),
@@ -110,6 +111,89 @@ const (
 	// "private" range for internal purposes, will not be sent
 	INTERNAL_STATE_MACHINE_NOTIFIER TypeId = 200
 )
+
+func TypeIdFromName(id string) TypeId {
+	switch id {
+	case "M_SP_NA_1":
+		return TypeId(M_SP_NA_1)
+	case "M_DP_NA_1":
+		return TypeId(M_DP_NA_1)
+	case "M_ST_NA_1":
+		return TypeId(M_ST_NA_1)
+	case "M_BO_NA_1":
+		return TypeId(M_BO_NA_1)
+	case "M_ME_NA_1":
+		return TypeId(M_ME_NA_1)
+	case "M_ME_NB_1":
+		return TypeId(M_ME_NB_1)
+	case "M_ME_NC_1":
+		return TypeId(M_ME_NC_1)
+	case "M_IT_NA_1":
+		return TypeId(M_IT_NA_1)
+	case "M_SP_TB_1":
+		return TypeId(M_SP_TB_1)
+	case "M_DP_TB_1":
+		return TypeId(M_DP_TB_1)
+	case "M_ST_TB_1":
+		return TypeId(M_ST_TB_1)
+	case "M_BO_TB_1":
+		return TypeId(M_BO_TB_1)
+	case "M_ME_TD_1":
+		return TypeId(M_ME_TD_1)
+	case "M_ME_TE_1":
+		return TypeId(M_ME_TE_1)
+	case "M_ME_TF_1":
+		return TypeId(M_ME_TF_1)
+	case "M_IT_TB_1":
+		return TypeId(M_IT_TB_1)
+
+	case "C_SC_NA_1":
+		return TypeId(C_SC_NA_1)
+	case "C_DC_NA_1":
+		return TypeId(C_DC_NA_1)
+	case "C_RC_NA_1":
+		return TypeId(C_RC_NA_1)
+	case "C_SE_NA_1":
+		return TypeId(C_SE_NA_1)
+	case "C_SE_NB_1":
+		return TypeId(C_SE_NB_1)
+	case "C_SE_NC_1":
+		return TypeId(C_SE_NC_1)
+	case "C_BO_NA_1":
+		return TypeId(C_BO_NA_1)
+	case "C_SC_TA_1":
+		return TypeId(C_SC_TA_1)
+	case "C_DC_TA_1":
+		return TypeId(C_DC_TA_1)
+	case "C_RC_TA_1":
+		return TypeId(C_RC_TA_1)
+	case "C_SE_TA_1":
+		return TypeId(C_SE_TA_1)
+	case "C_SE_TB_1":
+		return TypeId(C_SE_TB_1)
+	case "C_SE_TC_1":
+		return TypeId(C_SE_TC_1)
+	case "C_BO_TA_1":
+		return TypeId(C_BO_TA_1)
+	case "M_EI_NA_1":
+		return TypeId(M_EI_NA_1)
+
+	case "C_IC_NA_1":
+		return TypeId(C_IC_NA_1)
+	case "C_CI_NA_1":
+		return TypeId(C_CI_NA_1)
+	case "C_RD_NA_1":
+		return TypeId(C_RD_NA_1)
+	case "C_CS_NA_1":
+		return TypeId(C_CS_NA_1)
+	case "C_RP_NA_1":
+		return TypeId(C_RP_NA_1)
+	case "C_TS_TA_1":
+		return TypeId(C_TS_TA_1)
+
+	}
+	return TypeId(0)
+}
 
 // Cause of Transmission
 //
