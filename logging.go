@@ -84,9 +84,9 @@ func initLogger(config Config) {
 	// logError = log.New(output, "❌ ", log.Ltime|log.Lshortfile)
 	// logInfo = log.New(output, "🥨 ", log.Ltime)
 
-	logDebug = log.New(vv104loggerDebug, "🪲 ", log.Ltime|log.Lshortfile)
-	logError = log.New(vv104loggerError, "❌ ", log.Ltime|log.Lshortfile)
-	logInfo = log.New(vv104loggerInfo, "🥨 ", log.Ltime)
+	logDebug = log.New(vv104loggerDebug, "Debug: ", log.Ltime|log.Lshortfile)
+	logError = log.New(vv104loggerError, "ERROR: ", log.Ltime|log.Lshortfile)
+	logInfo = log.New(vv104loggerInfo, "", log.Ltime)
 
 }
 

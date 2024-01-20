@@ -4,32 +4,57 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 )
 
+// holds three strings: obj name, typeId, IOA
+// all are strings, so the toml marshaller will produce toml arrays (otherwise tables)
+type NameTypeIdIoa [3]string
+
 type Objects struct {
 	sync.RWMutex
-	// lists are mainly for GUI use
-	MoniList ObjectList
-	CtrlList ObjectList
 	// maps keep obj Names and refer to Asdu objects
 	MoniObjects ObjectsMap
 	CtrlObjects ObjectsMap
+
+	// lists are mainly for GUI use (could be merged with configuredObjects?)
+	MoniList ObjectList
+	CtrlList ObjectList
+
+	// configured Objects are for import/export in toml file
+	configuredObjects ConfiguredObjects
 }
+
 type ObjectList []string
 type ObjectsMap map[string]Asdu
 
+// for toml conf file
+type ConfiguredObjects struct {
+	MonitoringList []NameTypeIdIoa `toml:"monitoringList,multiline,omitempty"`
+	ControlList    []NameTypeIdIoa `toml:"controlList,multiline,omitempty"`
+}
+
+func NewConfiguredObjects() *ConfiguredObjects {
+	return &ConfiguredObjects{
+		MonitoringList: []NameTypeIdIoa{},
+		ControlList:    []NameTypeIdIoa{},
+	}
+}
+
 func NewObjects() *Objects {
 	return &Objects{
-		RWMutex:     sync.RWMutex{},
-		MoniList:    []string{},
+		RWMutex:  sync.RWMutex{},
+		MoniList: []string{},
+		CtrlList: []string{},
+
 		MoniObjects: map[string]Asdu{},
 		CtrlObjects: map[string]Asdu{},
 	}
 }
 
-func (objects *Objects) AddObject(objectName string, asdu Asdu) error {
+func (objects *Objects) AddObjectByName(objectName string, asdu Asdu) error {
 	if objectName == "" {
 		return errors.New("obj name cant be empty string")
 	}
@@ -42,18 +67,65 @@ func (objects *Objects) AddObject(objectName string, asdu Asdu) error {
 		if objects.MoniObjects.ObjectExists(objectName, int(asdu.InfoObj[0].Ioa), int(asdu.TypeId)) {
 			return errors.New("moni object already exists")
 		}
+		// put in moni map, moni list and configured objects
 		objects.MoniObjects[objectName] = asdu
 		objects.MoniList = append(objects.MoniList, describeObject(objectName, asdu))
+
+		typeId := strconv.Itoa(int(asdu.TypeId))
+		ioa := strconv.Itoa(int(asdu.InfoObj[0].Ioa))
+		objects.configuredObjects.MonitoringList = append(objects.configuredObjects.MonitoringList, [3]string{objectName, typeId, ioa})
 	} else if isControlObject(int(asdu.TypeId)) {
 		// control direction
 		if objects.CtrlObjects.ObjectExists(objectName, int(asdu.InfoObj[0].Ioa), int(asdu.TypeId)) {
 			return errors.New("ctrl object already exists")
 		}
+		// put in ctrl map, ctrl list and configured objects
 		objects.CtrlObjects[objectName] = asdu
 		objects.CtrlList = append(objects.CtrlList, describeObject(objectName, asdu))
+
+		typeId := strconv.Itoa(int(asdu.TypeId))
+		ioa := strconv.Itoa(int(asdu.InfoObj[0].Ioa))
+		objects.configuredObjects.ControlList = append(objects.configuredObjects.ControlList, [3]string{objectName, typeId, ioa})
 	}
 
 	return nil
+}
+
+func (objects *Objects) addObjectsFromList(list ConfiguredObjects) error {
+	objects.rangeOverListAndAdd(list.MonitoringList)
+	objects.rangeOverListAndAdd(list.ControlList)
+	return nil
+}
+
+func (objects *Objects) rangeOverListAndAdd(list []NameTypeIdIoa) {
+	for _, name := range list {
+		objName := name[0]
+		typeIdStr := name[1]
+		ioaStr := name[2]
+
+		typeIdInt, err := strconv.Atoi(typeIdStr)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		ioaInt, err := strconv.Atoi(ioaStr)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		asdu := Asdu{}
+		asdu.TypeId = TypeId(typeIdInt)
+		infoObj := newInfoObj()
+		infoObj.Ioa = Ioa(ioaInt)
+		asdu.AddInfoObject(infoObj)
+
+		err = objects.AddObjectByName(objName, asdu)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	// return nil
+
 }
 
 func isMonitoringObject(typeId int) bool {
@@ -137,7 +209,7 @@ func (objectsMap ObjectsMap) ObjectExists(objName string, ioa int, typeId int) b
 // }
 
 func (objects Objects) PrintObjects() {
-	fmt.Println("============= Control Objects =============")
+	fmt.Println("=============  Control Objects  =============")
 
 	for objName, asdu := range objects.CtrlObjects {
 		fmt.Println(objName, asdu.String())
