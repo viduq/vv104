@@ -93,11 +93,11 @@ func printConfig(config Config) {
 	logInfo.Printf("%+v\n", config)
 }
 
-func WriteConfigAndObjectsToFile(config Config, configuredObjects ConfiguredObjects, filePathAndName string) error {
+func WriteConfigAndObjectsToFile(config Config, objects Objects, filePathAndName string) error {
 
 	eximportConfig := &eximportConfig{
 		Config:            &config,
-		ConfiguredObjects: &configuredObjects,
+		ConfiguredObjects: &objects.configuredObjects,
 	}
 
 	data, err := toml.Marshal(eximportConfig)
