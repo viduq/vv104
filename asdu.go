@@ -235,6 +235,11 @@ func (infoObj InfoObj) writeInfo(typeId TypeId, buf *bytes.Buffer) error {
 		infoObj.writeQualitySeparateOctet(buf)
 
 	case C_SC_NA_1:
+		// command info, todo make configurable
+		infoObj.CommandInfo.Quoc = Quoc{
+			Select: false,
+			Qu:     shortPulse,
+		}
 		b |= 0x01 & byte(val)
 		infoObj.writeCommandInfo(b, buf)
 
