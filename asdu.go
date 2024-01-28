@@ -234,7 +234,7 @@ func (infoObj InfoObj) writeInfo(typeId TypeId, buf *bytes.Buffer) error {
 		binary.Write(buf, binary.LittleEndian, int16(val))
 		infoObj.writeQualitySeparateOctet(buf)
 
-	case C_SC_NA_1:
+	case C_SC_NA_1, C_DC_NA_1:
 		// command info, todo make configurable
 		infoObj.CommandInfo.Quoc = Quoc{
 			Select: false,
