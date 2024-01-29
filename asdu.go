@@ -227,11 +227,27 @@ func (infoObj InfoObj) writeInfo(typeId TypeId, buf *bytes.Buffer) error {
 		b |= 0x03 & byte(val)
 		infoObj.writeSiqDiq(b, buf)
 
-	case M_ME_TD_1: // todo add other mvs here
+	case M_ME_NA_1, M_ME_NB_1, M_ME_TD_1, M_ME_TE_1:
 		// two bytes info
 		// one byte quality
 		// { IV | NT | SB | BL | 0 | 0 | 0 | OV }
 		binary.Write(buf, binary.LittleEndian, int16(val))
+		infoObj.writeQualitySeparateOctet(buf)
+
+	case M_ME_NC_1, M_ME_TF_1:
+
+		/*
+				bits := math.Float32bits(f32)
+			a.info[a.QualInfoLen()-5] = byte(bits)
+			a.info[a.QualInfoLen()-4] = byte(bits >> 8)
+			a.info[a.QualInfoLen()-3] = byte(bits >> 16)
+			a.info[a.QualInfoLen()-2] = byte(bits >> 24)
+		*/
+		bits := math.Float32bits(val)
+		binary.Write(buf, binary.LittleEndian, byte(bits))
+		binary.Write(buf, binary.LittleEndian, byte(bits>>8))
+		binary.Write(buf, binary.LittleEndian, byte(bits>>16))
+		binary.Write(buf, binary.LittleEndian, byte(bits>>24))
 		infoObj.writeQualitySeparateOctet(buf)
 
 	case C_SC_NA_1, C_DC_NA_1:
