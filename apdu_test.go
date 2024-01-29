@@ -21,7 +21,7 @@ func TestVariousFrames(t *testing.T) {
 	m_me_td_1.Asdu.CauseTx = Spont
 	m_me_td_1.Asdu.Casdu = 1
 
-	infoObj := newInfoObj()
+	infoObj := NewInfoObj()
 	infoObj.Ioa = 1235
 	infoObj.Value = IntVal(32767)
 	infoObj.TimeTag = time.Date(2023, 11, 1, 19, 44, 57, 23000000, time.Local)
@@ -34,7 +34,7 @@ func TestVariousFrames(t *testing.T) {
 	gi_act.Apci.Ssn = 0
 	gi_act.Asdu.TypeId = C_IC_NA_1
 	gi_act.Asdu.CauseTx = Act
-	infoObj = newInfoObj()
+	infoObj = NewInfoObj()
 	infoObj.Ioa = 0
 	infoObj.CommandInfo.Qoi = statioInterrogation
 	infoObj.Value = IntVal(0)
@@ -47,7 +47,7 @@ func TestVariousFrames(t *testing.T) {
 	sc_act.Apci.Rsn = 12
 	sc_act.Asdu.TypeId = C_SC_NA_1
 	sc_act.Asdu.CauseTx = Act
-	infoObj = newInfoObj()
+	infoObj = NewInfoObj()
 	infoObj.Ioa = 4500
 	infoObj.Value = IntVal(1)
 	sc_act.Asdu.AddInfoObject(infoObj)

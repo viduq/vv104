@@ -115,7 +115,7 @@ func (objects *Objects) rangeOverListAndAdd(list []NameTypeIdIoa) {
 
 		asdu := Asdu{}
 		asdu.TypeId = TypeId(typeIdInt)
-		infoObj := newInfoObj()
+		infoObj := NewInfoObj()
 		infoObj.Ioa = Ioa(ioaInt)
 		asdu.AddInfoObject(infoObj)
 

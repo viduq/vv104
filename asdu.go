@@ -46,7 +46,7 @@ func (asdu *Asdu) AddInfoObject(infoObj InfoObj) error {
 	return nil
 }
 
-func newInfoObj() InfoObj {
+func NewInfoObj() InfoObj {
 	ttag := time.Time{}
 	val := IntVal(0)
 
@@ -235,14 +235,6 @@ func (infoObj InfoObj) writeInfo(typeId TypeId, buf *bytes.Buffer) error {
 		infoObj.writeQualitySeparateOctet(buf)
 
 	case M_ME_NC_1, M_ME_TF_1:
-
-		/*
-				bits := math.Float32bits(f32)
-			a.info[a.QualInfoLen()-5] = byte(bits)
-			a.info[a.QualInfoLen()-4] = byte(bits >> 8)
-			a.info[a.QualInfoLen()-3] = byte(bits >> 16)
-			a.info[a.QualInfoLen()-2] = byte(bits >> 24)
-		*/
 		bits := math.Float32bits(val)
 		binary.Write(buf, binary.LittleEndian, byte(bits))
 		binary.Write(buf, binary.LittleEndian, byte(bits>>8))

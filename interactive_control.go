@@ -103,7 +103,7 @@ func (state *State) evaluateInputSplit(inputSplit []string) {
 
 		case "sp": // temporarily
 			sp := NewApdu()
-			infoObj := newInfoObj()
+			infoObj := NewInfoObj()
 			infoObj.Ioa = 12345
 			infoObj.Value = IntVal(1)
 			sp.Apci.FrameFormat = IFormatFrame
