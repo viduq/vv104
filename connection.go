@@ -131,7 +131,7 @@ func (state *State) receivingRoutine(conn net.Conn) {
 	defer logDebug.Println("receivingRoutine returned")
 	defer conn.Close()
 	var bytesbuf bytes.Buffer
-	buf := make([]byte, 256) // todo: read multiple tcp frames from a whole tcp frame
+	buf := make([]byte, 1024)
 	state.Wg.Add(1)
 	defer state.Wg.Done()
 

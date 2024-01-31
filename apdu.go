@@ -99,16 +99,17 @@ func ParseApdu(buf *bytes.Buffer) ([]Apdu, error) {
 	for buf.Len() >= 6 {
 		apdu := NewApdu()
 
-		if buf.Len() < 6 {
-			return allApdus, errors.New("buffer < 6 bytes, can't parse")
-		}
-		if buf.Len() > 253 { // todo check if 255?
-			// hier müssen wahrscheinlich mehrere frames ausgewertet werden
-			// todo
-		}
+		// if buf.Len() < 6 {
+		// 	return allApdus, errors.New("buffer < 6 bytes, can't parse")
+		// }
+		// if buf.Len() > 253 { // todo check if 255?
+		// 	// hier müssen wahrscheinlich mehrere frames ausgewertet werden
+		// 	// todo
+		// }
 
 		b, _ = buf.ReadByte()
 		if b != startbyte {
+			fmt.Println(buf.Bytes())
 			return allApdus, errors.New("startbyte is not first byte, todo")
 		}
 
@@ -117,6 +118,7 @@ func ParseApdu(buf *bytes.Buffer) ([]Apdu, error) {
 			return allApdus, errors.New("apdu len is not within range")
 		}
 		apdu.Apci.length = uint8(b)
+		fmt.Println("apci len:", apdu.Apci.length, "buf.Len", buf.Len())
 
 		// ctrl field 1
 		b, _ = buf.ReadByte()
@@ -149,17 +151,17 @@ func ParseApdu(buf *bytes.Buffer) ([]Apdu, error) {
 			// u frame
 			apdu.Apci.FrameFormat = UFormatFrame
 
-			if b&byte(StartDTAct) == byte(StartDTAct) {
+			if b == byte(StartDTAct) {
 				apdu.Apci.UFormat = StartDTAct
-			} else if b&byte(StartDTCon) == byte(StartDTCon) {
+			} else if b == byte(StartDTCon) {
 				apdu.Apci.UFormat = StartDTCon
-			} else if b&byte(StopDTAct) == byte(StopDTAct) {
+			} else if b == byte(StopDTAct) {
 				apdu.Apci.UFormat = StopDTAct
-			} else if b&byte(StopDTCon) == byte(StopDTCon) {
+			} else if b == byte(StopDTCon) {
 				apdu.Apci.UFormat = StopDTCon
-			} else if b&byte(TestFRAct) == byte(TestFRAct) {
+			} else if b == byte(TestFRAct) {
 				apdu.Apci.UFormat = TestFRAct
-			} else if b&byte(TestFRCon) == byte(TestFRCon) {
+			} else if b == byte(TestFRCon) {
 				apdu.Apci.UFormat = TestFRCon
 			}
 

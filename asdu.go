@@ -209,6 +209,10 @@ func (asdu Asdu) String() string {
 		s += infoObj.Quality.String()
 		s += " "
 
+		if TypeIsTimeTagged(asdu.TypeId) {
+			s += infoObj.TimeTag.String()
+		}
+
 	}
 
 	return s
@@ -528,6 +532,10 @@ func (infoObj *InfoObj) parseInfoObj(typeId TypeId, buf *bytes.Buffer) error {
 
 	}
 
+	if TypeIsTimeTagged(typeId) {
+		infoObj.parseTimeTag(buf)
+	}
+
 	return nil
 }
 
@@ -556,10 +564,6 @@ func (infoObj *InfoObj) parseMvValue(typeId TypeId, buf *bytes.Buffer) {
 		infoObj.Value = IntVal(value)
 
 		infoObj.parseQds(typeId, buf)
-
-		if TypeIsTimeTagged(typeId) {
-			infoObj.parseTimeTag(buf)
-		}
 
 	case M_ME_NC_1, M_ME_TF_1:
 		// float value
