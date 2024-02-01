@@ -10,16 +10,17 @@ import (
 type State struct {
 	Config           Config
 	ConnState        ConnState
-	sendAck          ack
-	recvAck          ack
 	Chans            AllChans
-	Wg               sync.WaitGroup
+	Objects          *Objects
+	Running          bool // true when trying to connect/waiting for connection
+	TcpConnected     bool
 	Ctx              context.Context
+	Wg               sync.WaitGroup
 	Cancel           context.CancelFunc
 	dt_act_sent      UFormat // for notification of state machine if a startdt_act or stopdt_act was sent
 	manualDisconnect bool
-	Running          bool // true when trying to connect/waiting for connection
-	TcpConnected     bool
+	sendAck          ack
+	recvAck          ack
 	tickers          tickers
 }
 type tickers struct {
@@ -61,17 +62,21 @@ const (
 
 func NewState() State {
 	return State{
-		Config:    Config{Mode: "", Ipv4Addr: "", Port: 0, Casdu: 0, AutoAck: false, K: 0, W: 0, T1: 0, T2: 0, T3: 0, IoaStructured: false, InteractiveMode: false, UseLocalTime: false},
+		Config:    Config{},
 		ConnState: 0,
 		sendAck:   ack{},
 		recvAck:   ack{},
 		Chans:     AllChans{},
+		Objects:   &Objects{},
 		Wg:        sync.WaitGroup{},
 		Ctx:       nil,
 		Cancel: func() {
 		},
-		dt_act_sent: 0,
-		tickers:     tickers{},
+		dt_act_sent:      0,
+		manualDisconnect: false,
+		Running:          false,
+		TcpConnected:     false,
+		tickers:          tickers{},
 	}
 }
 
@@ -137,7 +142,7 @@ func (state *State) connectionStateMachine() {
 		case apduReceived = <-state.Chans.Received:
 			if (apduReceived.Apci.FrameFormat != IFormatFrame) || apduReceived.Asdu.TypeId < INTERNAL_STATE_MACHINE_NOTIFIER {
 				// real apdu received, not an internal notification
-				logInfo.Println("<<RX:", apduReceived)
+				logInfo.Println("<<RX:", state.Objects.objNameOrIoa(apduReceived.Asdu), apduReceived)
 				state.tickers.t3ticker.Reset(time.Duration(state.Config.T3) * time.Second)
 			}
 

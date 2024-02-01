@@ -140,6 +140,31 @@ func describeObject(objectName string, asdu Asdu) string {
 	return fmt.Sprintln(objectName + " | " + asdu.TypeId.String() + " | " + asdu.InfoObj[0].Ioa.String())
 }
 
+func (objects *Objects) objNameOrIoa(asdu Asdu) string {
+	if len(asdu.InfoObj) == 0 {
+		// not an i-format
+		return ""
+	}
+
+	for name, asduFromMap := range objects.MoniObjects {
+		if asdu.TypeId == asduFromMap.TypeId {
+			if asdu.InfoObj[0].Ioa == asduFromMap.InfoObj[0].Ioa {
+				return name
+			}
+		}
+	}
+
+	for name, asduFromMap := range objects.CtrlObjects {
+		if asdu.TypeId == asduFromMap.TypeId {
+			if asdu.InfoObj[0].Ioa == asduFromMap.InfoObj[0].Ioa {
+				return name
+			}
+		}
+	}
+
+	return asdu.InfoObj[0].Ioa.String()
+}
+
 func (objects *Objects) RemoveObject(objectName string) error {
 
 	objects.RWMutex.Lock()

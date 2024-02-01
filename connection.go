@@ -242,7 +242,7 @@ func (state *State) sendingRoutine(conn net.Conn) {
 					// TODO block on a channel
 				}
 			}
-			logInfo.Println("TX>>:", apduToSend)
+			logInfo.Println("TX>>:", state.Objects.objNameOrIoa(apduToSend.Asdu), apduToSend)
 			err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
 			if err != nil {
 				logDebug.Println(err)

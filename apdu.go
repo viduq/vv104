@@ -33,7 +33,7 @@ func (apdu Apdu) String() string {
 	case IFormatFrame:
 		return fmt.Sprintf("(%d/%d) ", apdu.Apci.Ssn, apdu.Apci.Rsn) + apdu.Asdu.String()
 	case SFormatFrame:
-		return fmt.Sprintf("S-Format (%d)\n", apdu.Apci.Rsn)
+		return fmt.Sprintf("S-Format (%d)", apdu.Apci.Rsn)
 	case UFormatFrame:
 		return apdu.Apci.UFormat.String()
 
@@ -118,7 +118,7 @@ func ParseApdu(buf *bytes.Buffer) ([]Apdu, error) {
 			return allApdus, errors.New("apdu len is not within range")
 		}
 		apdu.Apci.length = uint8(b)
-		fmt.Println("apci len:", apdu.Apci.length, "buf.Len", buf.Len())
+		// fmt.Println("apci len:", apdu.Apci.length, "buf.Len", buf.Len())
 
 		// ctrl field 1
 		b, _ = buf.ReadByte()

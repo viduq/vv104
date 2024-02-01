@@ -140,7 +140,7 @@ type Qu uint8
 type Qoi uint8
 
 func (ioa Ioa) String() string {
-	return fmt.Sprintf("IOA: %d", ioa)
+	return fmt.Sprintf("IOA=%d", ioa)
 }
 
 func (q Quality) String() string {
@@ -170,7 +170,7 @@ func (q Quality) String() string {
 
 func (casdu Casdu) String() string {
 
-	return fmt.Sprintf("CASDU: %d", casdu)
+	return fmt.Sprintf("CASDU=%d", casdu)
 }
 
 func (asdu Asdu) String() string {
@@ -189,7 +189,7 @@ func (asdu Asdu) String() string {
 	}
 
 	if asdu.OrigAddr != 0 {
-		s += "OA: %s" + string(asdu.OrigAddr)
+		s += "OA=%s" + string(asdu.OrigAddr)
 	}
 
 	if asdu.Sequence {
@@ -202,8 +202,8 @@ func (asdu Asdu) String() string {
 	}
 
 	for _, infoObj := range asdu.InfoObj {
-		s += infoObj.Ioa.String()
-		s += " "
+		// s += infoObj.Ioa.String()
+		s += " val="
 		s += infoObj.Value.String()
 		s += " "
 		s += infoObj.Quality.String()
