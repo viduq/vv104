@@ -61,13 +61,14 @@ const (
 )
 
 func NewState() State {
+	objects := NewObjects()
 	return State{
 		Config:    Config{},
 		ConnState: 0,
 		sendAck:   ack{},
 		recvAck:   ack{},
 		Chans:     AllChans{},
-		Objects:   &Objects{},
+		Objects:   objects,
 		Wg:        sync.WaitGroup{},
 		Ctx:       nil,
 		Cancel: func() {

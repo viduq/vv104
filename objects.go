@@ -44,13 +44,16 @@ func NewConfiguredObjects() *ConfiguredObjects {
 }
 
 func NewObjects() *Objects {
+	moniObjects := make(map[string]Asdu)
+	ctrlObjects := make(map[string]Asdu)
+
 	return &Objects{
 		RWMutex:  sync.RWMutex{},
 		MoniList: []string{},
 		CtrlList: []string{},
 
-		MoniObjects: map[string]Asdu{},
-		CtrlObjects: map[string]Asdu{},
+		MoniObjects: moniObjects,
+		CtrlObjects: ctrlObjects,
 	}
 }
 

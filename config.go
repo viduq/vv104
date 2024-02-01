@@ -38,7 +38,7 @@ func NewConfig() *Config {
 	return &cfg
 }
 
-func (config *Config) ParseFlags(objects *Objects) {
+func (state *State) ParseFlags() {
 
 	confPathPtr := flag.String("c", "", "Path to config toml file. If conf.toml is provided, all other flags are overwritten")
 	serverPtr := flag.Bool("s", false, "Connection mode: For Server (Controlled station) use '-s'. For Client (Controlling station) use without flag (default)")
@@ -58,32 +58,32 @@ func (config *Config) ParseFlags(objects *Objects) {
 			fmt.Println(err)
 			return
 		}
-		*config = *loadedConfig
-		*objects = *loadedObjects
+		state.Config = *loadedConfig
+		state.Objects = loadedObjects
 
 	} else {
 
 		if *serverPtr {
-			config.Mode = "server"
+			state.Config.Mode = "server"
 		} else {
-			config.Mode = "client"
+			state.Config.Mode = "client"
 		}
 
-		config.Ipv4Addr = *ipPtr
-		config.InteractiveMode = *interactivePtr
-		config.Port = *portPtr
-		config.LogToBuffer = *logToBufferPtr
-		config.LogToStdOut = *logToStdOutPtr
+		state.Config.Ipv4Addr = *ipPtr
+		state.Config.InteractiveMode = *interactivePtr
+		state.Config.Port = *portPtr
+		state.Config.LogToBuffer = *logToBufferPtr
+		state.Config.LogToStdOut = *logToStdOutPtr
 
 		// todo
-		config.K = 12
-		config.W = 8
-		config.T1 = 15
-		config.T2 = 10
-		config.T3 = 20
-		config.AutoAck = true
-		config.IoaStructured = false
-		config.UseLocalTime = false
+		state.Config.K = 12
+		state.Config.W = 8
+		state.Config.T1 = 15
+		state.Config.T2 = 10
+		state.Config.T3 = 20
+		state.Config.AutoAck = true
+		state.Config.IoaStructured = false
+		state.Config.UseLocalTime = false
 	}
 
 }

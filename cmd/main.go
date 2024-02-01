@@ -9,11 +9,10 @@ import (
 func main() {
 	fmt.Println("vv140 started.")
 
-	objects := vv104.NewObjects()
 	state := vv104.NewState()
-	state.Config.ParseFlags(objects)
+	state.ParseFlags()
 
-	objects.PrintObjects()
+	state.Objects.PrintObjects()
 
 	state.Start()
 
