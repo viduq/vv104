@@ -223,11 +223,11 @@ func (infoObj InfoObj) writeInfo(typeId TypeId, buf *bytes.Buffer) error {
 	val := infoObj.Value.Value()
 
 	switch typeId {
-	case M_SP_NA_1:
+	case M_SP_NA_1, M_SP_TB_1:
 		b |= 0x01 & byte(val)
 		infoObj.writeSiqDiq(b, buf)
 
-	case M_DP_NA_1:
+	case M_DP_NA_1, M_DP_TB_1:
 		b |= 0x03 & byte(val)
 		infoObj.writeSiqDiq(b, buf)
 
